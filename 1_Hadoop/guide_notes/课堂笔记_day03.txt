@@ -1,0 +1,57 @@
+1. Hadoop如何识别是Linux路径还是HDFS路径
+   就是基于 core-site.xml中的fs.defaultFS的配置.
+      <property>
+                <name>fs.defaultFS</name>
+                <value>hdfs://hadoop101:9820</value>
+      </property>
+
+  1.1  Hadoop的fs.defaultFs的默认配置是: file:/// 
+       假如我们在执行wordcount程序时,编写的命令是:
+       hadoop jar share/hadoop/mapreduce/hadoop-mapredce-examples.jar  wordcount  wcinput/wc.input   wcoutput
+       再执行时，会按照fs.defaultFS的配置解析输入和输出路径:
+       
+       如果配置的是file:///
+       则将输入路径解析为:  file:///opt/module/hadoop-3.1.3/wcinput/wc.input
+         将输出路径接卸为:  file:///opt/module/hadoop-3.1.3/wcoutput
+       
+       如果配置的是 hdfs://hadoop101:9820
+       假如我们在执行wordcount程序时,编写的命令是:
+       hadoop jar share/hadoop/mapreduce/hadoop-mapredce-examples.jar  wordcount  /user/atguigu/input    /user/atguigu/wcoutput
+       则将输入路径解析为: hdfs://hadoop101:9820/user/atguigu/input
+         将输出路径解析为: hdfs://hadoop101:9820/user/atguigu/output
+   
+       
+2. 端口号
+   9820  NameNode内部通信端口
+   9870  NameNode web端访问端口
+   9869  2NN 内部通信端口
+   9868  2NN web端访问端口
+   8088  ResourceManager web端访问端口
+   8032  ResourceManager 内部通信地址
+
+
+3. 在Yarn执行程序遇到超出虚拟内存限制，Container被kill的问题
+
+   在yarn-site.xml中加入如下配置
+   <property>
+      <name>yarn.nodemanager.vmem-check-enabled</name>
+      <value>false</value>
+   </property>
+
+
+4. 格式化NameNode需要注意的问题:
+
+   4.1 格式化NameNode一般只在刚配置好集群，第一次启动集群前进行格式化。后续正常使用集群的情况下，不需要重复格式化.
+   4.2 重新格式化遇到的两个问题
+       1). 格式化的时候需要我们进行确认操作
+       2). 格式化完成后,Namenode能够启动，datanode启动不了（起来后又掉了）
+       3). 问题的原因:  NameNode重新格式化后，会生成新的集群id, 但是Datanode还记录原先的集群id，
+                        此时Namenode和 Datanode的集群id不一致，就会导致datanode起不来.
+   4.3 如何解决？
+      
+      再重新格式化之前，删除所有节点的hadoop安装目录下的 data目录(必须) 和  logs目录
+       
+ 
+ 5. 出问题看日志 * 3      
+    hadoop 日志在哪里:   hadoop的日志在hadoop的安装目录下的 logs目录
+    查看方式:  tail -n 100  日志文件

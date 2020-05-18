@@ -1,0 +1,77 @@
+1. 配置hadoop的windows依赖
+   1.1  将windows依赖  hadoop-3.1.0  拷贝到一个固定的位置. 
+        例如: E:\hadoop\hadoop-3.1.0
+   1.2  配置环境变量
+        1) 新建变量
+	   HADOOP_HOME=E:\hadoop\hadoop-3.1.0
+        2) 修改变量
+	   path=......(不要改不要删已有内容);%HADOOP_HOME%\bin
+ 
+
+ 2. NameNode  和 SecondaryNamenode 的工作机制:
+
+   2.1 NameNode是干啥的？
+       
+       最主要负责的事情就是对整个HDFS中数据的元数据进行管理.
+   
+   2.2 NameNode管理的元数据存在哪里?  内存+磁盘.
+       
+       考虑数据的安全性或者是可靠性，元数据存到磁盘比较安全. 
+       如果数据维护到磁盘,数据的安全可以保障。但是带来的问题是
+       访问效率低. 因为修改元数据是在磁盘进行修改的。因此效率低. 
+
+       考虑到效率的问题，元数据存储到内存效率高. 带来的问题是数据
+       不安全.因为内存的数据容易丢失，比如服务器掉电或者其他故障等...
+
+       结论: 内存和磁盘都存.
+
+   2.3 如何在实现高效操作元数据的情况下，还能实现内存+磁盘的维护方案.
+       
+       HDFS 通过 fsimage(镜像文件) + edits(编辑日志)的方案来解决问题. 
+       
+       镜像文件: 某个时刻对NN内存中元数据的一个快照. 镜像文件 <= NN内存中数据
+       编辑日志: 记录对HDFS的改操作.只做追加操作，因此效率高.
+
+   2.4 如果一直往edits文件中追加内容，改文件会变的特别大， 且会越来越大, 因此
+       需要隔一段时间或者合适的时机进行 fsimage + edits文件的合并工作, 从而生成
+       新的fsimage 
+       新的fsimage = 旧的fsimage + edits
+
+       将fsimage 和edits的合并工作交给2nn完成. 大概的过程就是将nn机器对应的磁盘上的
+       fsimage 和 edits文件拉取到2nn的机器中，在2nn的机器中将fsimage + edits都读取到
+       内存中进行合并，然后生成新的fsimage ，再推送到nn机器中的磁盘上，nn中旧的fsimage
+       会保留，新的fsimage对应的是正在使用.
+   
+    
+   2.5 具体的工作细节:
+
+       1) NN启动时，需要自己先将磁盘的fsimage_current + edits001_progress 文件进行一次合并. 在内存中构建好元数据信息
+       2) 当对HDFS进行改操作， 首先会在edits001_progress(正在使用的编辑日志)记录对应的操作，
+          然后对NN内存中的元数据进行相应的修改.
+       3) 2NN会每隔1个小时或者当 edits001_progress中已经记录了100万次的操作后，开始进行fsimage_current 和edits001_progress的合并
+
+       4) NN会将edits_progress进行所谓的滚动，说白了就是该文件不能再进行写入操作，会生成另外一个编辑日志文件
+          用于记录后续的写操作.
+	  滚动正在使用的编辑日志: edits001_progress --> edits001
+	  新的编辑日志: edits002_progress 
+       
+       5) 2NN 将NN中的fsimage_current 和 edits001 拷贝过来。加载到内存中进行合并. 合并完成后会生成新的fsimage_new.
+
+       6) 2NN 将fsimage_new 推送到NN中， fsiamge_current --> fsimage_old 会保留， 
+          fsimage_new -->fsiamge_current .
+	  相当于会保留一份新的fsimage 和一份旧的fsiamge.
+
+       7) 总结: NN内存中的数据 = 磁盘上正在使用的fsimage + 正在使用的edits文件.
+
+       
+
+
+作业:
+ 1.  HDFS API代码的练习
+ 2.  总结数据流:(自己组织语言简明扼要的说明即可)
+        写数据流程
+	读数据流程
+ 3.  按照课堂的讲解过程分析NN 和 2NN的工作机制. 
+
+
+

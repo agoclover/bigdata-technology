@@ -1,0 +1,79 @@
+1. 配置文件的格式: 
+   <!-- --> : xml文件中的注释格式
+   <configuration>  : xml文件中的标签、标记、元素....
+        <property>  : 用来表示一个配置项
+	     <name></name> : 表示配置项的名称
+	     <value></value>: 表示配置项的值
+	</property> 
+   </configuration>
+
+2. SSH 免密登录
+  
+  2.1 存在的问题: 集群的启动和关闭,现在都是通过单点启动和关闭的方式操作的。 如果集群的机器很多，怎么办?
+
+  2.2 解决问题的想法: 
+      希望把集群启动和关闭的事写成一个脚本.
+      
+      脚本的大概思路: 
+      
+      登录到hadoop102  启动/关闭 Namenode 
+      登录到hadoop104  启动/关闭 2nn
+      登录到hadoop102  hadoop103  hadoop104  启动/关闭  dn
+      登录到hadoop103  启动/关闭  rm
+      登录到hadoop102  hadoop103 hadoop104  启动/关闭 nm
+ 
+  2.3 如何登录到远程机器
+      通过 ssh  ip/主机名
+      
+  2.4 解决ssh登录到远程机器需要输入密码问题
+     
+      通过公私钥进行免密登录. 
+
+      实现的效果: hadoop102  hadoop103  hadoop104 之间实现任意免密登录. 
+      
+      分别在hadoop102  hadoop103 hadoop104 生成公私钥
+
+      ssh-keygen -t rsa  (敲4次回车)
+
+      把hadoop102 hadoop103 hadoop104的公钥授权给别的机器
+
+      ssh-copy-id hadoop102
+      ssh-copy-id hadoop103
+      ssh-copy-id hadoop104
+
+  
+3. 群起集群
+
+   3.1 需要用到的脚本
+       start-dfs.sh / stop-dfs.sh
+       start-yarn.sh / stop-yarn.sh 
+   3.2 hadoop如何知道在哪些机器启动对应的nn  2nn dn rm nm 
+       在配置文件中已经指定过 nn  2nn  rm 的地址
+       hadoop3需要通过workers文件配置在哪些节点启动dn和nm
+       hadoop2的文件是 slaves
+   3.3 配置workers
+       删除workers文件中的localhost
+       添加(无空格无空行)
+           hadoop102
+	   hadoop103
+	   hadoop104
+       分发到每个节点
+
+   3.4 群起集群
+       启动/关闭 hdfs: 在nn所在的节点运行  start-dfs.sh / stop-dfs.sh
+       启动/关闭 yarn: 在rm所在的节点运行  start-yarn.sh /stop-yarn.sh
+
+4. 管理脚本: 
+   4.1 实现集群的群起  和  群停 
+       脚本名: mycluster.sh
+   
+   4.2 实现查看每台节点jps的脚本
+       脚本名: myjps.sh
+
+
+5. 历史服务器 
+   启动: mapred --daemon start historyserver
+   停止: mapred --daemon stop historyserver
+
+6. 日志聚集  
+   将Job运行相关的日志上传到HDFS,可以在历史服务器中查看到.

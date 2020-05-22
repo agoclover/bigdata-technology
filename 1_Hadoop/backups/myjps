@@ -1,0 +1,10 @@
+#! /bin/bash
+
+echo "=============== jps Haoop102 ==============="
+ssh hadoop102 jps
+
+echo "=============== jps Haoop103 ==============="
+ssh hadoop103 jps
+
+echo "=============== jps Haoop104 ==============="
+ssh hadoop104 jps

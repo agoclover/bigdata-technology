@@ -7,12 +7,14 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 
 /**
  * <p>MR word count </p>
@@ -82,6 +84,25 @@ public class WordCount {
         }
     }
 
+
+    public static class WordCountPartition extends Partitioner<Text, IntWritable>{
+        /**
+         * Get the partition number for a given key (hence record) given the total
+         * number of partitions i.e. number of reduce-tasks for the job.
+         *
+         * <p>Typically a hash function on a all or a subset of the key.</p>
+         *
+         * @param text          the key to be partioned.
+         * @param intWritable   the entry value.
+         * @param numPartitions the total number of partitions.
+         * @return the partition number for the <code>key</code>.
+         */
+        @Override
+        public int getPartition(Text text, IntWritable intWritable, int numPartitions) {
+//            return Pattern.matches("\\b(?i)[a-p].*", text.toString()) ? 0 : 1;
+            return Pattern.matches("^13[6-9].*", text.toString()) ? Integer.valueOf(text.charAt(2)) - 6 : 5;
+        }
+    }
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         //1. get job instance
         Job job = Job.getInstance(new Configuration());
@@ -96,9 +117,13 @@ public class WordCount {
         //5. ser in-out for reducer
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
+
+        job.setPartitionerClass(WordCountPartition.class);
+        job.setNumReduceTasks(2);
+
         //6. set input-output path
-        FileInputFormat.setInputPaths(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileInputFormat.setInputPaths(job, new Path("/Users/amos/Desktop/tmp/data/demo.txt"));
+        FileOutputFormat.setOutputPath(job, new Path("/Users/amos/Desktop/tmp/output/test3"));
         //7. submit job
         job.waitForCompletion(true);
     }

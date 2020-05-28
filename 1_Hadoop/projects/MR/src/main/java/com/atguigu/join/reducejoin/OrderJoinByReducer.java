@@ -4,7 +4,6 @@ import com.atguigu.join.bean.Order;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -16,12 +15,13 @@ import java.io.IOException;
 import java.util.Iterator;
 
 /**
- * <p>Title: </p>
+ * <p>通过 reduce 端进行 join 操作</p>
  *
- * <p>Description: </p>
+ * <p>多个 reducer 中, 个别 reducer 处理的数据特别大, 称为 数据倾斜.
+ * 数据倾斜一般会导致某 job 运行时间很长, 导致整个运行时间变长, 还可能产生处理失败导致全局失败的情况.</p>
  *
  * @author Zhang Chao
- * @version java_day
+ * @version mr_day11
  * @date 2020/5/26 7:33 下午
  */
 public class OrderJoinByReducer {
@@ -35,6 +35,13 @@ public class OrderJoinByReducer {
          */
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+            /**
+             * Counter
+             * Get from context. increment(long n) is to set step length.
+             */
+            context.getCounter("Reducer Join", "Map setup").increment(1);
+
+            // 关键是要获取切片信息以表明此数据来自于那个文件
             FileSplit inputSplit = (FileSplit) context.getInputSplit();
             filename = inputSplit.getPath().getName();
         }
@@ -49,6 +56,9 @@ public class OrderJoinByReducer {
          */
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+
+            context.getCounter("Reducer Join", "Map map").increment(1);
+
             String[] split = value.toString().split("\t");
             if ("pname.txt".equals(filename)){
                 order.setId("");
@@ -99,8 +109,12 @@ public class OrderJoinByReducer {
          */
         @Override
         protected void reduce(Order key, Iterable<NullWritable> values, Context context) throws IOException, InterruptedException {
+
+            context.getCounter("Reducer Join", "Reducer reduce").increment(1);
+
             Iterator<NullWritable> iterator = values.iterator();
             iterator.next();
+            // 这里不用考虑拷贝属性, 因为是得到了字符串属性, 但还是要考虑到这一点
             String pname = key.getPname();
 
             while (iterator.hasNext()){
@@ -122,7 +136,7 @@ public class OrderJoinByReducer {
         job.setOutputValueClass(NullWritable.class);
         job.setGroupingComparatorClass(JoinByReducerGroupComparator.class);
         FileInputFormat.setInputPaths(job, new Path("/Users/amos/Desktop/tmp/data/join"));
-        FileOutputFormat.setOutputPath(job, new Path("/Users/amos/Desktop/tmp/output/join"));
+        FileOutputFormat.setOutputPath(job, new Path("/Users/amos/Desktop/tmp/output/joinbyreducer1"));
         job.waitForCompletion(true);
     }
 }

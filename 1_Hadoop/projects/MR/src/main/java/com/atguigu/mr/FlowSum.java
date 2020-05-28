@@ -1,9 +1,8 @@
 package com.atguigu.mr;
 
-import com.atguigu.bean.FlowBean;
+import com.atguigu.mr.bean.FlowBean;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -17,9 +16,10 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 /**
- * <p>Title: </p>
+ * <p>自定义分区</p>
  *
- * <p>Description: </p>
+ * <p>自定义 XXPartition 以自定义分区,
+ * 分区个数还需要 job.setNumReduceTasks(n); 来设置</p>
  *
  * @author Zhang Chao
  * @version java_day

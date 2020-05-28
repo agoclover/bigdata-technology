@@ -12,15 +12,13 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FilterOutputFormat;
-import org.codehaus.jackson.map.util.BeanUtil;
 
 import java.io.IOException;
 
 /**
- * <p>Title: </p>
+ * <p>自定义输出路径</p>
  *
- * <p>Description: </p>
+ * <p>通过自定义 XXOutputFormat 和 XXRecordWriter 以自定义输出路径</p>
  *
  * @author Zhang Chao
  * @version java_day

@@ -12,27 +12,25 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
- * <p>Title: </p>
+ * <p>通过 map 端进行 join 操作</p>
  *
- * <p>Description: </p>
+ * <p>提前把 小文件 加入到内存中, 再从 map 端读取大文件, 每读取一行并进行 join 操作.
+ * 从而不需要 shuffle 和 reducer 过程.
+ * 如果是一个大文件一个小文件, 则通过 map join 比较好.</p>
  *
  * @author Zhang Chao
- * @version java_day
+ * @version mr_day11
  * @date 2020/5/26 8:14 下午
  */
 public class OrderJoinByMapper {
@@ -47,6 +45,11 @@ public class OrderJoinByMapper {
          */
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+            /*
+            context.getCacheFiles() --> URI --> Path(URI)
+            FileSystem.get(Configuration).open(Path) --> FSDataInputStream
+            --> InputStreamReader --> BufferedReader
+             */
             URI[] files = context.getCacheFiles();
             Path path = new Path(files[0]);
             FileSystem fileSystem = FileSystem.get(context.getConfiguration());
@@ -55,11 +58,14 @@ public class OrderJoinByMapper {
 
             String line;
 
+            /*
+            善用工具类 StringUtils
+             */
             while (StringUtils.isNotEmpty(line = bufferedReader.readLine())){
                 String[] split = line.split("\t");
                 map.put(split[0], split[1]);
             }
-
+            // 关闭流
             IOUtils.closeStreams(bufferedReader);
         }
 

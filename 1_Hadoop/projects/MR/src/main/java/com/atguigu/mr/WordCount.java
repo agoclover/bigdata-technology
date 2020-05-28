@@ -1,5 +1,7 @@
 package com.atguigu.mr;
 
+import com.atguigu.mrutils.BaseDriver;
+import com.atguigu.mrutils.JobInitModel;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -99,32 +101,57 @@ public class WordCount {
          */
         @Override
         public int getPartition(Text text, IntWritable intWritable, int numPartitions) {
-//            return Pattern.matches("\\b(?i)[a-p].*", text.toString()) ? 0 : 1;
-            return Pattern.matches("^13[6-9].*", text.toString()) ? Integer.valueOf(text.charAt(2)) - 6 : 5;
+            return Pattern.matches("\\b(?i)[a-p].*", text.toString()) ? 0 : 1;
+//            return Pattern.matches("^13[6-9].*", text.toString()) ? Integer.valueOf(text.charAt(2)) - 6 : 4;
         }
     }
-    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-        //1. get job instance
-        Job job = Job.getInstance(new Configuration());
-        //2. link jar
-        job.setJarByClass(WordCount.class);
-        //3. link Mapper & Reducer
-        job.setMapperClass(WordCountMapper.class);
-        job.setReducerClass(WordCountReducer.class);
-        //4. set out for mapper
-        job.setMapOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
-        //5. ser in-out for reducer
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
+//    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+//        //1. get job instance
+//        Job job = Job.getInstance(new Configuration());
+//        //2. link jar
+//        job.setJarByClass(WordCount.class);
+//        //3. link Mapper & Reducer
+//        job.setMapperClass(WordCountMapper.class);
+//        job.setReducerClass(WordCountReducer.class);
+//        //4. set out for mapper
+//        job.setMapOutputKeyClass(Text.class);
+//        job.setOutputValueClass(IntWritable.class);
+//        //5. ser in-out for reducer
+//        job.setOutputKeyClass(Text.class);
+//        job.setOutputValueClass(IntWritable.class);
+//
+//        job.setPartitionerClass(WordCountPartition.class);
+//        job.setNumReduceTasks(2);
+//
+//        //6. set input-output path
+//        FileInputFormat.setInputPaths(job, new Path("/Users/amos/Desktop/tmp/data/demo.txt"));
+//        FileOutputFormat.setOutputPath(job, new Path("/Users/amos/Desktop/tmp/output/test3"));
+//        //7. submit job
+//        job.waitForCompletion(true);
+//    }
 
-        job.setPartitionerClass(WordCountPartition.class);
-        job.setNumReduceTasks(2);
+    public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
+        String[] inPaths = new String[]{"/Users/amos/Desktop/tmp/data/wordcount"};
+        String outPath = "/Users/amos/Desktop/tmp/output/wordcount1";
+        String jobName = "Word Count";
+        Configuration conf = new Configuration();
 
-        //6. set input-output path
-        FileInputFormat.setInputPaths(job, new Path("/Users/amos/Desktop/tmp/data/demo.txt"));
-        FileOutputFormat.setOutputPath(job, new Path("/Users/amos/Desktop/tmp/output/test3"));
-        //7. submit job
-        job.waitForCompletion(true);
+        JobInitModel job =  new JobInitModel(inPaths,
+                outPath,
+                conf,
+                null,
+                jobName,
+                WordCount.class,
+                null,
+                WordCountMapper.class,
+                Text.class,
+                IntWritable.class,
+                WordCountPartition.class,
+                2,
+                null,
+                WordCountReducer.class,
+                Text.class,
+                IntWritable.class);
+        BaseDriver.initJob(job);
     }
 }

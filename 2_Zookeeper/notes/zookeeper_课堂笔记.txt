@@ -1,0 +1,131 @@
+1.Zookeeper的启动
+  1) zk服务器的启动，状态，停止
+     zkServer.sh start | status | stop
+   
+  2) zk服务的进程: QuorumPeerMain
+  
+  3) zk客户端的启动: 
+
+     zkCli.sh  默认连接当前机器的zk服务
+
+     zkCli.sh -server host:port  连接指定host的zk服务
+
+  4) zk客户端的停止:
+     quit
+
+  5) zk客户端的进程: ZooKeeperMain
+
+
+2. Zookeeper  Znode类型:
+   
+   2.1 持久节点: 客户端与zk服务断开连接后，持久节点不会被删除(除非手动删)
+       1) 普通持久节点
+       2) 带序号的持久节点(序号Zookeeper自己维护)
+
+   2.2 短暂节点: 客户端与zk服务断开连接后，短暂节点会自动删除
+       1) 普通短暂节点
+       2) 带序号的短暂节点(序号Zookeeper自己维护)
+
+3. 监听器原理
+   
+   1) 创建Zk客户端对象时 会对应着创建两个线程，一个是connect线程，一个是listener线程.
+   2) connect线程: 负责zk客户端与zk服务的通信，例如心跳等.
+   3) listener线程: 负责监听的事情. 当zk客户端在zk服务中注册的监听事件发生后，zk服务会通知到
+                     listener线程，listener线程会调用内部的process方法做出应对.
+
+
+4. Zookeeper 选举机制
+
+   4.1 ZAB协议: 基于消息传递且保证数据一致性的一种算法(协议)
+   4.2 ZAB协议的目标:
+       1)  没有的leader的情况选举leader
+       2)  有leader的情况，去尽可能保证数据一致.
+
+   
+   4.3  半数机制: 整个zk集群中，只有有半数以上的机器存活，zk集群就能对外提供服务. 
+                 也就意味着在启动zk集群时，只要启动的机器数超过半数，leader也就能选举出来.
+
+  
+   4.4 zk集群中的机器角色
+       1) leader:   领导者(只有一个)
+       2) follower: 跟随者(可有多个)
+
+
+   4.5 leader选举过程: 
+      
+       1) 新的集群启动: 
+          
+	  关注点: 集群中的每台机器中都没有存储任何数据(生来平等:zxid都一样)
+	 
+	  选择过程:   有5台机器,分别给5台机器进行编号(myid)，例如: 1 2 3 4 5 ， 
+	              假设按照1 2 3 4 5 的顺序启动机器(且假设真正启动起来的顺序也是1 2 3 4 5 )
+	  
+	  投票: 自私原则 ，墙头草随风倒.
+         
+	  启动server1: 第一票投给自己(1,zxid),此时，机器数没有达到半数,leader未选举
+	  启动server2: 第一票投给自己(2,zxid), 
+	               server2将(2,zxid)投给server1， server1将(1,zxid)投给server2，
+		       server2比较自己的投票(2,zxid) 与 server1的投票(1,zxid)， 2 >1 , 则server2保持自己的投票
+		       server1比较自己的投票(1,zxid) 与 server2的投票(2,zxid）  1 <2 , 技不如人，改变投票，server1改投(2,zxid)
+		       因此最终server2有两票. 但是机器数没有达到半数，leader未选举
+
+          启动server3: 第一票投给自己(3,zxid)
+	               server3接收到server1的(1,zxid), server2的(2,zxid) ,3 > 2 >1  ，server3保持自己的投票(3,zxid)
+		       server2接收到server3的(3,zxid), serser1的(1,zxid) , 2 < 3 ,   改变投票为(3,zxid)
+		       server1接收到server3的(3,zxid), server2的(2,zxid) , 1 < 2< 3, 改变投票为(3,zxid)
+		       因此最终server3有3票, 机器数也达到半数， server3当选为leader, server1 和 server2 为follower
+          
+	  启动server4: 因为集群已经有leader存在， server4注定就是follower 
+	  启动server5: 因为集群已经有leader存在， server5注定就是follower
+	  
+
+       2) 集群工作中，leader故障后的选举: 
+          
+	  当集群工作中，leader故障后，只要剩下的机器数大于半数， 集群能够正常工作，但是需要重新选举leader。
+
+	  选举的过程还是进行投票, 因为集群是在工作中，因此每台机器的zxid有可能不同.
+	  那么每次投出的票(myid,zxid) , 先比较zxid，再比较myid，因此集群中剩余的机器中zxid最大的当选为leader,
+	  如果zxid都一样，理论情况下myid最大的当选leader.
+
+	  zxid: 某种意义上，可以表示当前机器中存储的数据的完整度.
+
+
+5. 写数据流程
+   1) 客户端连接zk集群的任意一台机器，发送写请求
+   2) 如果客户端连接的zk集群不是leader，则当前这台机器会将客户端的写请求转发给leader
+   3) 当leader接收到写请求后， 会将当次的写操作构造成一个事务，对应一个zxid. 
+      然后将写的操作广播给每个follower
+   4) 每个follower接收到写操作后，先将写操作存入队列中(FIFO的队列),并向leader反馈
+   5) 当leader接收到集群中半数以上的follower的反馈，则代表的本次写操作可以正常进行,
+      leader会再次广播给各个follower，让follower将写操作进行commit(真正写数据)
+   6) 各个follower将写操作成功commit以后，再次向leader反馈.
+   7) 当leader接收到集群中半数以上的follower的反馈 ，表示此次写操作成功.
+   8) 由客户端所连接的zk集群的中机器 ，向客户端发送响应。说数据写成功。 
+
+   
+
+
+6. Zk集群的搭建:
+   1). 安装zk
+   2). 在zk的安装目录下，创建zkData目录
+   3). 修改zoo.cfg文件:
+        dataDir=/opt/module/zookeeper-3.5.7/zkData
+  server.2=hadoop102:2888:3888
+	server.3=hadoop103:2888:3888
+	server.4=hadoop104:2888:3888
+   4). 在zkData下创建myid文件，指定当前机器的myid号
+       hadoop102 -->2
+       hadoop103 -->3
+       hadoop104 -->4
+
+
+作业: 
+  1. 搭建Zookeeper集群
+  2. 编写zk集群管理脚本 zk.sh
+  3. 练习命令行操作
+  4. 练习API操作
+  5. 思考:
+         1) 如何删除非空的Znode?
+	 2) 思考Hadoop中 
+	    对于HDFS , 如何应对NameNode的故障?
+	    对于Yarn , 如何应对ResourceManager的故障?

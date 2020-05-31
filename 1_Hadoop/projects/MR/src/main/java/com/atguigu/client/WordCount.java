@@ -14,7 +14,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import java.io.IOException;
 
 /**
- * <p>MR word count </p>
+ * <p>MR word count 本地端调用 + 集群端运行</p>
  *
  * <p>仿写 word count MapReduce 程序
  * 本地端调用, 集群端运行</p>
@@ -110,8 +110,8 @@ public class WordCount {
         Job job = Job.getInstance(configuration);
 
         //2. link jar
-//        job.setJarByClass(WordCount.class);
-        job.setJar("/Users/amos/IdeaProjects/MR/target/MR-1.0-SNAPSHOT.jar");
+//        job.setJarByClass(WordCount.class); // 在集群上运行
+        job.setJar("/Users/amos/IdeaProjects/MR/target/MR-1.0-SNAPSHOT.jar"); // 通过客户端在集群上运行
         //3. link Mapper & Reducer
         job.setMapperClass(WordCountMapper.class);
         job.setReducerClass(WordCountReducer.class);

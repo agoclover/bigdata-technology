@@ -1,0 +1,25 @@
+1. 前置知识:
+   1) Hadoop 
+   2) Zookeeper
+
+2. 目前Hadoop集群存在的问题:
+   2.1  如果NameNode故障后，应该怎么办?
+      
+      1)因为NameNode是HDFS的中心.所有的DN都要围绕着NN工作,如果NN故障后，整个HDFS不能在正常进行服务.
+      
+      2)如上的问题就是比较典型的单点故障.
+      
+      3)解决办法是: 搭建多个NameNode,其中一个是Active状态，就是正常对外提供服务.
+                    其他的NameNode都是standby状态,是不能对外提供服务的.只有当Active的NN故障后,
+		    StandBy状态的NN才有机会上位，代替之前的NN对外提供服务.
+      4)待解决问题:
+        a. 多个StandBy NN 如何保证与 Active NN 中的数据保持一致?
+	   
+	   使用journalNode做为共享存储， ActiveNN 将edits写到JN中， StandByNN 从JN中读取edits
+	   在内存中进行重构，重构完后，就能保障StantByNN 和ActiveNN元数据一致.
+           
+	   对于2NN所负责的事，StandByNN就可以完成.
+	   
+	b. 多个StandBy NN 之间的争夺上位问题 
+
+   2.2  如果ResourceManager故障后，应该怎么办?

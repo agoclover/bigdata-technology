@@ -1,0 +1,142 @@
+1.MapReduce的核心思想:
+  1.1  先分(map)后合(reduce)
+
+  1.2  MapReduce核心思想初认识: 
+       1)
+          首先待计算的数据会先生成切片(逻辑上对数据进行划分) , 生成的切片个数对应着要启动多少个
+          MapTask进行Map阶段的计算.
+       
+       2) 多个MapTask是并行运行的，互不相干. 
+
+       3) 在每个MapTask中对数据的处理要考虑到很多细节, 是否有分区， 如何排序， 数据如何写磁盘等..
+
+       4) 多个MapTask计算完成后，每个MapTask都会有输出的数据
+
+       5) 会根据分区的个数决定启动多少个ReduceTask(逻辑上来说), 实际上是 启动多少个ReduceTask就会生成多少个分区.
+       
+       6) 每个ReduceTask会到每个MapTask中拷贝自己所要处理的数据,说白了就是对应的分区的数据.
+
+       7) 每个ReduceTask最终也会输出最后的结果.
+
+       8) 待说明的问题:  
+          a. 数据如何切片
+	  b. MapTask如何工作
+	  c. 中间过程的排序
+	  d. 数据如何分区
+	  e. ReduceTask如何工作
+	  f. MapTask和ReduceTask如何衔接...
+	  g. 。。。。。。。。
+
+
+2. 官方WordCount程序阅读: 
+   
+   2.1 
+   一个MapReduce程序由3部分组成:  
+   1) Mapper    MapTask过程中的处理逻辑
+   2) Reducer   ReduceTask过程中的处理逻辑
+   3) Driver    将我们写好的Mapper和Reducer打包成一个Job,可以提交到本地或者是Yarn上执行。
+
+   2.2 Hadoop自身提供了一套序列化类型，Hadoop没有直接使用Java的序列化类型.
+
+
+3. 运行MR程序出现的异常:
+   FileAlreadyExistsException: Output directory file:/D:/output already exists 
+   文件已经存在异常: 输出路径xxx已经存在.
+
+4. MR程序运行的方式:
+   4.1 本地方式，直接在windows中运行
+   4.2 集群运行
+       官方wordcount程序:  hadoop  jar  xxx.jar(指定jar包)  wordcount(运行的程序)  /input(输入路径)  /output(输出路径)
+       自定义wordcount程序:hadoop  jar  MapReduce0317-1.0-SNAPSHOT.jar com.atguigu.wordcount1.WordCountDriver /wcinput /wcouput 
+
+   4.3 集群运行步骤1:
+       1) 将写好的mr程序打成jar包
+       2) 将jar包上传到linux中
+       3) 运行:
+          hadoop  jar  MapReduce0317-1.0-SNAPSHOT.jar com.atguigu.wordcount1.WordCountDriver /wcinput /wcouput 
+   
+   4.4 集群运行步骤2:
+       1)在Driver类中添加集群运行的相关配置参数
+       2)将写好的mr程序打成jar
+       3)把打好的jar包设置到Driver类中
+       4)配置IDEA中main方法执行的参数
+         Main class: 设置成Driver的全类名
+	 VM options: -DHADOOP_USER_NAME=atguigu
+	 Program arguments: hdfs://hadoop102:9820/wcinput(输入) hdfs://hadoop102:9820/wcoutput2(输出)
+       5)在IDEA中直接运行Driver类中的main方法.
+         
+
+5. Mapper 类  和 Reducer类的解析
+   
+   5.1 Mapper类
+       1) 所有的MapReduce程序中的自定义Mapper类都需要继承Mapper类.
+       2) setup(): 在MapTask开始执行时调用1次.
+       3) map()  : 为输入数据的每个kv都调用一次map方法.大部分的MapReduce程序都需要重写该方法.
+       4) cleanup(): 在MapTask结束前调用1次
+       5) run()方法: 控制Mapper中的 setup  map  cleanup执行的方法
+       
+        public void run(Context context) throws IOException, InterruptedException {
+            setup(context);  // setup方法执行了一次
+         try {
+
+             while (context.nextKeyValue()) {  //判断是否还有下一个输入的kv
+             // 执行map方法，传入当前key  当前value
+             map(context.getCurrentKey(), context.getCurrentValue(), context);
+         }
+
+         } finally {
+           cleanup(context);  // cleanup方法执行了一次
+         }
+        }
+       
+    5.2 Reducer类
+        1) 所有的MapReduce程序中的自定义Reducer类都需要继承Reducer类.
+	2) setup():在ReduceTask开始执行时调用1次
+	3) reduce(): 为每个key调用1次reduce方法，大部分的MapReduce程序都需要重写该方法. 
+	             map写出的N个kv，其中会有很多相同的k， 在进入到reduce方法前，会按照k
+		     进行分组，把相同k的多个kv对分成一个组中. 一组的数据会执行一次reduce方法.
+
+	4) cleanup(): 在ReduceTask结束前调用1次
+	5) run():  控制Reducer中的 setup  reduce  cleanup执行的方法
+	  public void run(Context context) throws IOException, InterruptedException {
+              setup(context);  //调用1次setup方法
+          try {
+               while (context.nextKey()) {  //是否有下个key
+	           //执行reduce方法，出入当前key和values
+                   reduce(context.getCurrentKey(), context.getValues(), context);
+                   // If a back up store is used, reset it
+                   Iterator<VALUEIN> iter = context.getValues().iterator();
+                   if(iter instanceof ReduceContext.ValueIterator) {
+                   ((ReduceContext.ValueIterator<VALUEIN>)iter).resetBackupStore();        
+          }
+         }
+           } finally {
+              cleanup(context);  //调用1次cleanup方法
+           }
+         }
+
+6. WordCount程序debug调试
+   
+   6.1 Debug几个按钮的含义:
+       stop over: 逐行调试
+       step into: 进入调用的方法中
+       force step into : 强制进入调用的方法中
+       step out : 跳出方法的调用
+       Resume Program: 跳到下个断点的位置
+
+
+7. 作业安排: 
+   
+   1. 看一看，熟悉mapreduce的概念
+
+   2. WordCount案例
+      环境的准备
+      案例的需求分析
+      案例的编写
+      案例的测试 ，运行方式 
+      案例的debug调试
+   3. 熟悉Mapper类和Reduce类中的方法，和方法的执行时机及特点.
+   
+   4. 梳理总结HDFS
+   
+   

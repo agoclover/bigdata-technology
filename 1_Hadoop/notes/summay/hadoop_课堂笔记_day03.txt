@@ -1,0 +1,206 @@
+1. Hadoop如何识别是Linux路径还是HDFS路径
+   就是基于 core-site.xml中的fs.defaultFS的配置.
+      <property>
+                <name>fs.defaultFS</name>
+                <value>hdfs://hadoop101:9820</value>
+      </property>
+
+  1.1  Hadoop的fs.defaultFs的默认配置是: file:/// 
+       假如我们在执行wordcount程序时,编写的命令是:
+       hadoop jar share/hadoop/mapreduce/hadoop-mapredce-examples.jar  wordcount  wcinput/wc.input   wcoutput
+       再执行时，会按照fs.defaultFS的配置解析输入和输出路径:
+       
+       如果配置的是file:///
+       则将输入路径解析为:  file:///opt/module/hadoop-3.1.3/wcinput/wc.input
+         将输出路径接卸为:  file:///opt/module/hadoop-3.1.3/wcoutput
+       
+       如果配置的是 hdfs://hadoop101:9820
+       假如我们在执行wordcount程序时,编写的命令是:
+       hadoop jar share/hadoop/mapreduce/hadoop-mapredce-examples.jar  wordcount  /user/atguigu/input    /user/atguigu/wcoutput
+       则将输入路径解析为: hdfs://hadoop101:9820/user/atguigu/input
+         将输出路径解析为: hdfs://hadoop101:9820/user/atguigu/output
+   
+       
+2. 端口号
+   9820  NameNode内部通信端口
+   9870  NameNode web端访问端口
+   9869  2NN 内部通信端口
+   9868  2NN web端访问端口
+   8088  ResourceManager web端访问端口
+   8032  ResourceManager 内部通信地址
+
+
+3. 在Yarn执行程序遇到超出虚拟内存限制，Container被kill的问题
+
+   在yarn-site.xml中加入如下配置
+   <property>
+      <name>yarn.nodemanager.vmem-check-enabled</name>
+      <value>false</value>
+   </property>
+
+
+4. 格式化NameNode需要注意的问题:
+
+   4.1 格式化NameNode一般只在刚配置好集群，第一次启动集群前进行格式化。后续正常使用集群的情况下，不需要重复格式化.
+   4.2 重新格式化遇到的两个问题
+       1). 格式化的时候需要我们进行确认操作
+       2). 格式化完成后,Namenode能够启动，datanode启动不了（起来后又掉了）
+       3). 问题的原因:  NameNode重新格式化后，会生成新的集群id, 但是Datanode还记录原先的集群id，
+                        此时Namenode和 Datanode的集群id不一致，就会导致datanode起不来.
+   4.3 如何解决？
+      
+      再重新格式化之前，删除所有节点的hadoop安装目录下的 data目录(必须) 和  logs目录
+       
+ 
+ 5. 出问题看日志 * 3      
+    hadoop 日志在哪里:   hadoop的日志在hadoop的安装目录下的 logs目录
+    查看方式:  tail -n 100  日志文件
+
+
+6. 配置文件的说明
+   6.1 hadoop默认的配置文件
+      
+       core-dafault.xml
+       hdfs-default.xml
+       yarn-default.xml
+       mapred-default.xml
+  
+   6.2 用户自定义配置文件
+       core-site.xml
+       hdfs-site.xml
+       yarn-site.xml
+       mapred-site.xml
+   
+   6.3 优先级
+       xxx-site.xml  >  xxx-default.xml
+       hadoop启动的时候会先加载xxx-default.xml ,再加载xxx-site.xml ， 配置到xxx-site.xml中的配置会最终覆盖
+       xxx-default.xml中的配置。
+
+7. 伪分布式简单总结:
+   7.1  伪分布式的HDFS 和 Yarn的搭建只需了解即可. 建议搭建一次，感受一下. 
+   7.2  掌握格式化需要注意的问题
+   7.3  学会出问题看日志.
+   7.4  记住常见的端口号
+   7.5  hadoop配置文件的说明
+
+
+
+
+
+8. 集群分发脚本: 
+   
+   8.1  分发脚本解决的问题: 
+
+        因为集群是有多台服务器组成的，当设计到配置的更改，要求集群的配置是同步的，所以需要在每台机器
+	上都做相同的更改。当集群的服务器很多时，重复性的工作做起来没意义且麻烦.
+	可以写一个脚本， 脚本的作用就是将一台机器的配置直接同步到集群中的其他所有机器。这样的话，只需要
+	在一台机器上做更改，然后再通过脚本同步到别的机器即可.
+  
+   8.2  scp   
+
+        操作: 
+	站在101，将101的内容给到102
+	scp -r /opt/module/*  atguigu@hadoop102:/opt/module/
+
+	站在103 ，将101的内容给到103
+	scp -r  atguigu@hadoop101:/opt/module/*  /opt/module/
+
+	站在103 , 将101的内容给到104
+        scp -r  atguigu@hadoop101:/opt/module/*  atguigu@hadoop104:/opt/module/
+
+	练习: 
+	将101中  /etc/profile.d/my_env.sh  给到102 103 104 的 /etc/profile.d/目录下
+       
+	scp -r /etc/profile.d/my_env.sh  root@hadoop102:/etc/profile.d/
+	scp -r /etc/profile.d/my_env.sh  root@hadoop103:/etc/profile.d/
+	scp -r /etc/profile.d/my_env.sh  root@hadoop104:/etc/profile.d/
+
+   8.3   rsync
+
+        操作: 
+	站在101 ，将101的/opt/software下的内容给我102
+	rsync -av  /opt/software/*  atguigu@hadoop102:/opt/software/
+        
+
+  
+   8.4  分发脚本:  xsync  
+        
+	语法:  xsync 要分发的目录或者文件
+
+	注意: 脚本存放在 /home/atguigu/bin目录下。 bin目录默认不存在，需要自己创建. 
+	      以为默认情况下，系统PATH变量中包含  /home/atguigu/bin 路径，因此存放到
+	      该路径下的脚本是可以在系统的任意位置直接运行的。
+
+
+9. 分布式模式集群规划: 
+   NameNode、ResourceManager、SecondaryNameNode 相对来讲需要的资源更多，因此把这三个分步到不同的机器.
+   DataNode 是负责数据存储的， 因为三台机器都有存储资源，因此三台都要有DataNode
+   NodeManager是负责资源管理的，因为三台机器都有计算资源，因此三台都要有NodeManager
+
+   注意: 此种集群方式就是按照3个副本来规划的.
+
+   hadoop102    NameNode             DataNode         NodeManager
+   hadoop103    ResourceManager      DataNode         NodeManager
+   hadoop104    SecondaryNameNode    DataNode         NodeManager
+
+
+10.搭建完全分布式
+  10.1 先删除每个节点中hadoop安装目录下的  data  和  logs 目录.  因为102 103 104 的hadoop是从
+       已经做过配置的101中scp过来的。
+
+       如果102 103 104的hadoop是重新解压的，则无需做此步。
+
+  10.2  集群的配置  参考文档
+  
+  10.3  单点启动集群
+        1) 因为集群是新搭建的，第一次启动前需要先格式化（在NameNode所在的节点格式化）
+	   hdfs  namenode -format 
+        2) 启动HDFS
+
+	   在hadoop102 启动namenode   
+	   hdfs --daemon start namenode 
+
+	   在hadoop104 启动secondarynamenode
+	   hdfs --daemon start secondarynamenode
+
+	   在hadoop102 103 104 启动 datanode
+	   hdfs --daemon start datanode
+        
+	3) 启动Yarn
+
+	   在hadoop103启动 resourcemanager
+	   yarn --daemon start resourcemanager
+
+
+	   在hadoop102 103 104 启动nodemanager
+	   yarn --daemon start nodemanager
+
+   10.4 集群的简单操作
+        1)
+        在HDFS创建一个 /user/atguigu/input目录
+        hdfs dfs -mkdir -p /user/atguigu/input
+
+	2) 
+	将hadoop安装目录下的wcinput/wc.input 上传到 /user/atguigu/input 目录下
+	hdfs dfs -put wcinput/wc.input  /user/atguigu/input
+
+	3)
+	如何在HDFS查看具体存储的文件
+	DataNode存储文件的目录: /opt/module/hadoop-3.1.3/data/data/current/BP-1511121044-192.168.202.102-1589531664713/current/finalized/subdir0/subdir0
+
+	实际存储文件以块为单位进行存储,例如: blk_1073741825
+
+	4)
+	执行一个wordcount程序
+	hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.1.3.jar wordcount /user/atguigu/input /user/atguigu/output
+
+	5)
+	查看hdfs上面执行后的结果
+	hdfs dfs -cat /user/atguigu/output/part-r-00000
+
+
+
+作业: 
+    1. 按照实际情况练习伪分布式
+
+    2. 完全分布式的搭建。 

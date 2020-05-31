@@ -4,6 +4,8 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/../../../2_zookeeper/projects/pom.xml" />
+        <option value="$PROJECT_DIR$/../../../2_zookeeper/zookeeper/pom.xml" />
       </list>
     </option>
   </component>

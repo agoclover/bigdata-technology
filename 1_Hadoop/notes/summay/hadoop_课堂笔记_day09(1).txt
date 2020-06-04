@@ -1,0 +1,150 @@
+1. 分区 
+  1.1 自定义分区器
+     1) 自定义分区器继承 Partitioner类，并重写getPartition方法
+     2) 在driver类中设置使用
+        job.setPartitionerClass(PhoneNumPartitioner.class);
+     3) 设置reduce的个数
+        正常情况下，根据分区器业务来决定设置多少个，说白了就是分区器的逻辑会生成多少个分区，
+	则设置的多少个reduce
+
+  1.2 分区使用的注意事项:
+     
+     1). reduce个数的设置
+         如果不设置，reduce的个数默认为1 ， 则最终的分区号是固定的 0 
+	 如果    1 <   reduce个数  < 分区数, 报错 
+	 如果 reduce个数  > 分区数，  不报错， 多出的reduce空跑一趟.
+	 最佳: reduce的个数就设置为实际的分区数.
+
+     2). 分区号只能从0开始，逐一累加
+ 
+ 
+2. 排序
+   
+   2.1 排序是MR中最重要的操作之一 。 
+       在MapTask中有两次排序 溢写前排序  归并排序
+       在ReduceTask中有1次排序  归并排序
+
+   2.2 在MR中，排序是默认的行为. 默认会对KV中的K进行排序.
+       默认采用字典序进行排序.
+
+
+   2.3 排序的分类:
+       1) 全排序     所有的数据整体排序，要求只能有一个分区，一个reduce.
+       2) 区内排序   每个分区内的数据整体排序.
+       3) 辅助排序(分组排序) 
+       4) 二次排序   比较规则中用到两个条件
+
+   2.4 排序的前提:
+       排序的前提就是能够进行比较,
+       Java中的比较接口和比较器:
+		Comparable: 比较接口， compareTo()
+		Compartor : 比较器 ，  compare()
+  
+   2.5 Hadoop排序时 如何比较的
+
+       例如:  
+       
+       在MapTask中的 MapOutputBuffer 类中的init方法中
+       
+       comparator = job.getOutputKeyComparator();  // 获取key的比较器对象
+
+      public RawComparator getOutputKeyComparator() {
+         Class<? extends RawComparator> theClass = getClass(
+         JobContext.KEY_COMPARATOR, null, RawComparator.class);
+	 // 参数: mapreduce.job.output.key.comparator.class  默认没有配置
+
+         if (theClass != null)
+            return ReflectionUtils.newInstance(theClass, this);  //如果能通过参数获取到，则通过反射创建比较器对象
+         
+	 //如果通过参数获取不到，则获取到在driver中设置的map的输出的key的类型，
+	 // 并判断key的类型是否属于 ritableComparable类型
+	 // 再尝试为key获取比较器对象.
+         return WritableComparator.get(getMapOutputKeyClass().asSubclass(WritableComparable.class), this);
+      }
+   
+       public static WritableComparator get(
+          Class<? extends WritableComparable> c, Configuration conf) {
+	   // 从comparators中尝试获取key的比较器对象
+	   // 如果key是我们自己定义的类型，则获取不到
+	   // 如果key是hadoop的序列化类型，例如 Text, Intwriable等，则能获取到。
+           WritableComparator comparator = comparators.get(c);
+    if (comparator == null) {
+      // force the static initializers to run
+      forceInit(c);  //强制进行类加载
+      // look to see if it is defined now
+      comparator = comparators.get(c);   // 再次进行获取
+      // if not, use the generic one
+      if (comparator == null) { 
+      // 如果还获取不到，则直接new一个对象出来。
+         comparator = new WritableComparator(c, conf, true);
+      }
+    }
+    // Newly passed Configuration objects should be used.
+       ReflectionUtils.setConf(comparator, conf);
+       return comparator;
+  }
+     
+       
+    总结:  Hadoop自身的序列化类型，在类加载时， 会把类型 及 对应的比较器对象 注册到
+           WritableCompartor中的comparators 这个Map中
+	   
+	   如果key是我们自己定义的类型，则我们必须要为该类型提交比较器对象.
+
+	   不管是hadoop自身的序列化类型还是我们自己定义的类型，只要作为key来使用，
+	   则必须要有对应的比较器对象才能够进行比较，才能实现排序.
+
+   
+   2.6  比较器 WritableCompartor
+        
+	1. public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2): 底层的实现，我们不动，会调用第2个方法
+	2. public int compare(WritableComparable a, WritableComparable b)： 我们可以重写，实现比较规则
+	3. public int compare(Object a, Object b): 还是会调用到第2个方法
+
+
+        总结:  作为key来使用的类型，需要提供比较器对象, 还要求 key的类必须是WritableComparable类型.
+   
+   2.7  比较接口  WritableComparable 
+
+        1. 要求所有作为key来使用的类型，都需要实现WritableComparable接口.
+	2. 该接口中可以通过compareTo定义比较规则.
+
+  
+   2.8 排序大总结***********: 
+       1) 一个接口和一个类
+         接口:  WritableComparable :  定义默认的比较规则
+         类:    WritableCompartor  :  一般用于定义临时比较规则
+      
+       2) Hadoop的排序，都是对key的排序，排序时需要比较，比较的时候都是用key类型对应的比较器对象来进行比较.
+
+       3) 对于key的类型来说，如果提供了对应的比较器对象，则使用我们自己提供的，
+          如果没有提供对应的比较器对象，则Hadoop会帮我们创建一个比较器对象.
+       
+       4) hadoop对key的比较，默认调用的是比较器类中的compare(WritableComparable ,WritableComparable)方法.
+          第一种情况: 如果自定义的比较器中，重写了compare方法，则使用重写后的方法进行比较.
+	  第二种情况: 如果自定义的比较器中，没有重写compare方法，则使用的是WritableCompartor的compare(WritableComparable ,WritableComparable)方法，
+	               而在此方法中，默认的实现是 a. compareTo(b), 因此会调用到key的类中的compareTo方法进行比较.
+          第三种情况: 如果没有提供比较器对象，则hadoop默认帮我们创建一个比较器对象, 但是hadoop默认创建的比较器对象
+	               还是使用WritableCompartor的compare(WritableComparable ,WritableComparable)方法，而该方法中
+		       默认的实现a. compareTo(b), 所以最终还是调用到key的类中的compareTo方法进行比较.
+       5) 实际使用:
+          按照hadoop的设计来说，我们需要提供比较器对象WritableComparator，需要实现WritableComparable.
+	  按照我们实际使用(偷懒), 不用提交比较器对象，直接实现WritableComparable接口，重写compareTo即可.
+	  一般来讲， WritableComparable是用来定义默认的比较规则的， WritableComparator用来定义临时的比较规则的.
+
+         
+     
+
+      
+       
+        
+
+
+
+
+
+
+
+作业: 
+
+1. 自定义分区器  实现wordcount  a-p  q-z  的效果
+

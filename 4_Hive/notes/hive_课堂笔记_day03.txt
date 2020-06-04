@@ -1,0 +1,118 @@
+1. 排序
+  1.1  Order By 全局排序  
+       关注点: 只有一个reducer，也就是只有一个分区.
+
+  1.2  Sort By  Reducer内部排序/区内排序  
+       关注点: 有多个reducer，也就是有多个分区
+       注意点: 有多个reducer,单独使用sort by, 数据会被随机分到每个reducer中，在每个reducer中sort by会将数据排序。
+       
+       insert overwrite local directory '/opt/module/hive/datas/sort-result/'
+       select * from emp sort by deptno desc ; 
+
+  1.3  Distribute By  分区
+       关注点: 指定按照哪个字段分区
+       insert overwrite local directory '/opt/module/hive/datas/distribute-result/' 
+       select * from emp distribute by deptno  sort by  empno desc ;
+
+     
+  1.4  Cluster By 分区排序
+       关注点: 相当于distribute by 和sort by同时用， 并且分区和排序的字段是同一个，并且排序是升序的情况.
+
+       select * from emp distribute by deptno sort by deptno asc ; 
+       select * from emp cluster by deptno ; 
+
+
+2. 分区表
+
+   2.1 问题: Hive没有索引的概念，会暴力扫描整个数据.
+   2.2 本质: Hive的分区表，实际就是分目录，通过多个目录维护整个数据.
+
+   2.3 创建分区表(通过dept数据模拟日志数据)
+       dept_20200401.log
+       dept_20200402.log
+       dept_20200403.log
+
+       create table dept_partition (
+          deptno int, dname string, loc string
+       )
+       partitioned by (day string)  -- 指定表的分区字段是day,该字段的类型是string
+       row format delimited fields terminated by '\t' ;
+
+       load data local inpath '/opt/module/hive/datas/dept_20200401.log' into table dept_partition partition(day='20200401');
+       load data local inpath '/opt/module/hive/datas/dept_20200402.log' into table dept_partition partition(day='20200402');
+       load data local inpath '/opt/module/hive/datas/dept_20200403.log' into table dept_partition partition(day='20200403');
+
+
+       查分区数据
+       select * from dept_partition where day = '20200401' ;
+
+   2.4 分区表的分区的操作:
+      1) 查看分区表有多少个分区
+         show partitions  表名.
+
+      2) 增加分区
+         增加单个分区:
+	 alter table dept_partition add partition(day='20200404');
+	 增加多个分区:
+	 alter table dept_partition add partition(day='20200405') partition(day='20200406');
+
+      3) 删除分区
+         删除单个分区:
+	 alter table dept_partition drop partition(day='20200404');
+	 删除多个分区:
+	 alter table dept_partition drop partition(day='20200405'), partition(day='20200406');
+  
+   2.5 二级分区
+       
+       create table dept_partition2 (
+          deptno int, dname string, loc string
+       )
+       partitioned by (day string,hour string)  
+       row format delimited fields terminated by '\t' ;
+       
+       load data local inpath '/opt/module/hive/datas/dept_20200401.log' into table dept_partition2 partition(day='20200402',hour='02');
+       load data local inpath '/opt/module/hive/datas/dept_20200402.log' into table dept_partition2 partition(day='20200402',hour='03');
+       load data local inpath '/opt/module/hive/datas/dept_20200403.log' into table dept_partition2 partition(day='20200402',hour='04');
+   
+   2.6 分区与数据产生关联的方式:
+      1) 手动创建分区目录，执行分区的修复
+         创建分区目录
+         hadoop fs -mkdir -p /user/hive/warehouse/mydb.db/dept_partition/day=20200404
+	 上传数据到分区目录
+	 hadoop fs -put dept_20200401.log /user/hive/warehouse/mydb.db/dept_partition/day=20200404
+         在hive中修复分区
+	 msck repair table dept_partition 
+      
+      2) 手动创建分区目录，在hive中添加对应的分区
+         创建分区目录
+         hadoop fs -mkdir -p /user/hive/warehouse/mydb.db/dept_partition/day=20200405
+	 上传数据到分区目录
+	 hadoop fs -put dept_20200402.log /user/hive/warehouse/mydb.db/dept_partition/day=20200405
+	 在Hive中手动添加分区
+	 alter table dept_partition add partition(day='20200405')
+         
+      3) 手动创建分区目录,在hive中load数据到对应的分区
+         创建分区目录
+         hadoop fs -mkdir -p /user/hive/warehouse/mydb.db/dept_partition/day=20200406
+	 在hive中load数据到指定的分区
+	 load data local inpath '/opt/module/hive/datas/dept_20200403.log' into table dept_partition partition(day='20200406') ;
+ 
+   2.7  动态分区
+      1) 创建动态分区表
+       create table dept_dy_partition (
+          deptno int, dname string
+       )
+       partitioned by (loc string)  
+       row format delimited fields terminated by '\t' ;  
+
+      2) 往动态分区插2入数据
+        a.
+        insert into table dept_dy_partition values(11,'TEST',1000);
+	b.
+	insert into table dept_dy_partition partition(loc) select * from dept ; 
+        c.
+	load data local inpath '/opt/module/hive/datas/dept.txt' into table dept_dy_partition ;
+        
+
+
+set hive.exec.mode.local.auto=true;

@@ -1,0 +1,173 @@
+1.hive问题总结:
+  1.1 使用HA集群
+      1) 集群一定要正常启动  zk  start-dfs.sh  start-yarn.sh 
+      2) 内存问题:
+         修改yarn调度器的配置capacity-scheduler.xml:
+	  <property>
+		<name>yarn.scheduler.capacity.maximum-am-resource-percent</name>
+		<value>1</value>
+	  </property>
+         修改虚拟内存限制 yarn-site.xml:
+	 <property>
+		<name>yarn.nodemanager.vmem-check-enabled</name>
+		<value>false</value>
+	 </property>
+  1.2 Hive连接mysql的配置用户名和密码
+      在hive-site.xml中指定正确的mysql的用户名和密码
+      
+  1.3 Mysql中user表root用户host的设置
+     
+      mysql> update user set host ='%' where user='root' ;
+      mysql> flush privileges ; 
+
+  1.4 配置文件错误      
+
+  1.5 beeline 拒绝连接
+      1) 正常情况的拒绝连接，稍等片刻即可.
+      2) 非正常情况的拒绝连接: nameNode的状态.
+         
+  1.6 hive跑任务卡住
+      1) 大部分情况还是因为内存问题.
+
+
+2. 数据库的DDL
+   
+  2.1 建库语句
+     CREATE DATABASE [IF NOT EXISTS] database_name
+     [COMMENT database_comment]
+     [LOCATION hdfs_path]
+     [WITH DBPROPERTIES (property_name=property_value, ...)];
+  2.2 查看数据库详情
+     desc database  库名
+     desc database extended 库名
+  
+  2.3 切换数据库
+      use 库名
+  2.4 显示数据库
+      show databases;
+      show databases  like '*xxx*';
+
+  2.5 修改数据库
+      只能改数据库的dbproperties
+      alter database xxx set dbproperties('k1'='v1','k2'='v2'...)
+  2.6 删除数据库
+      删除空库:  drop database  if exists 库名
+      删除非空库:drop database if exists 库名 cascade ;
+
+3. 表的DDL
+  3.1 建表语句:
+
+   CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name     -- 指定表名 [EXTERNAL 外部表]
+   [(col_name data_type [COMMENT col_comment], ...)]      -- [指定列名  列类型 [列描述信息]]
+   [COMMENT table_comment]                                -- [指定表描述信息]
+   [PARTITIONED BY (col_name data_type [COMMENT col_comment], ...)]  -- [指定分区列名  列类型 [列描述信息]]
+   [CLUSTERED BY (col_name, col_name, ...)                           -- [指定分桶列名
+   [SORTED BY (col_name [ASC|DESC], ...)] INTO num_buckets BUCKETS]  -- [指定排序列 升序/降序] 分多少个桶 ]
+   [ROW FORMAT delimited fields terminated by char ]      -- [指定每行数据中的每个字段的分隔符]
+   [COLLECTION ITEMS TERMINATED BY char]                  -- [指定集合中每个元素的分隔符]
+   [MAP KEYS TERMINATED BY char]                          -- [指定map集合中每个kv的分隔符]
+   [LINES TERMINATED BY char]                             -- [指定每行数据的分隔符]
+   [STORED AS file_format]                                -- [指定表数据文件的存储格式]
+   [LOCATION hdfs_path]                                   -- [指定表对应的hdfs的存储路径]
+   [TBLPROPERTIES (property_name=property_value, ...)]    -- [指定表的属性]
+   [AS/like select_statement]                             -- [As基于另一张表数据来创建当前表/ like复制表结构]
+
+  
+  3.2 创建表
+    1) 管理表(内部表 MANAGED_TABLE) : 管理数据的生命周期，表被删除，数据也被删除. 
+     create table if not exists  student_m
+     (id int comment "student's id ", 
+      name string  comment "student's name"
+     )
+     comment "this is student table "
+     row format delimited fields terminated by '\t'
+     lines terminated by '\n'
+     stored as textfile
+     tblproperties('aa'='bb') ;
+     
+     load data local  inpath  '/opt/module/hive/datas/student.txt' into table student_m ; 
+
+
+   2) 外部表(EXTERNAL_TABLE): 不管理数据的生命周期，表被删除，数据还保留
+     create EXTERNAL table if not exists  student_e
+     (id int , 
+      name string 
+     )
+     row format delimited fields terminated by '\t' ;
+     
+     load data local  inpath  '/opt/module/hive/datas/student.txt' into table student_e ; 
+
+   3) 创建表指定location
+     create  table if not exists  student_location
+     (id int , 
+      name string 
+     )
+     row format delimited fields terminated by '\t' 
+     location '/student_location' ;
+
+   4) 管理表和外部表的转换:
+      每个表中都有一个tblproperties:  Table Type: MANAGED_TABLE | EXTERNAL_TABLE
+
+
+  3.3 查看表信息
+      desc 表名
+      desc formatted 表名
+
+  3.4 删除表
+      drop table 表名
+
+  3.5 修改表
+      1)重命名表
+        ALTER TABLE table_name RENAME TO new_table_name
+	alter table mytbl2 rename to mytbl3 ;
+
+      2)更新列
+      ALTER TABLE table_name CHANGE [COLUMN] col_old_name col_new_name column_type [COMMENT col_comment] [FIRST|AFTER column_name]
+      alter table mytbl3 change column name new_name string ;
+
+      3)增加和替换列
+      ALTER TABLE table_name ADD|REPLACE COLUMNS (col_name data_type [COMMENT col_comment], ...) 
+      alter table mytbl3 add columns (a int, b string , c double) ;
+      alter table mytbl3 replace columns (aa int, bb bigint , cc double ,dd string );  -- 同等类型ok
+
+      alter table mytbl3 replace columns (id bigint, money double , price string , name string); -- 隐式转换ok
+ 
+      alter table mytbl3 replace columns (aa  int , bb bigint, cc double , dd boolean) ; -- 类型不同或者不能隐式转换则替换失败
+
+
+4. DML操作
+  4.1 数据导入(用的比较多)
+      1)load 
+        语法: load data [local] inpath '数据的path' [overwrite] into table student [partition (partcol1=val1,…)];
+	      [local]: 如果写上，表示从本地路径加载数据，如果不写，表示从hdfs加载数据
+	      [overwrite]: 如果写上，表示覆盖表中的数据，如果不写，表示将输入追加到表中.
+	
+	从本地加载数据(复制): 
+	load data local inpath '/opt/module/hive/datas/student1.txt' into table student_insert ;
+	从hdfs加载数据(移动):
+	load data  inpath '/student2.txt' into table student_insert; 
+	从本地加载数据 overwrite
+	load data local inpath '/opt/module/hive/datas/student3.txt' overwrite into table student_insert; 
+
+     2) insert
+        基本模式(很少使用): insert into table xxx values(xx,xx,xx...) -- 需要执行MR
+	insert into student_insert values(1017,'ss17');	
+	
+
+	基本模式(基于单张表的数据):
+        create table student_result like student_insert ; // 复制表结构
+	insert into table student_result  select * from student_insert; 
+
+	多模式插入(很少使用)
+	create table student_result1 like student_insert ; 
+	
+        from student_insert 
+        insert into table student_result  select * where id <1016
+        insert into table student_result  select * where id >1016 ;
+
+
+
+
+        
+  4.2 数据导出(用的比较少)
+      

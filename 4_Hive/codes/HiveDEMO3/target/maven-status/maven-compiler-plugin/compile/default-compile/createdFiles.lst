@@ -1,0 +1,6 @@
+com\atguigu\gulivideo\EtlDriver.class
+com\atguigu\gulivideo\EtlMapper.class
+com\atguigu\hive\udtf\StringSplitUDTF.class
+com\atguigu\hive\udtf\StringSplitUDTF2.class
+com\atguigu\gulivideo\EtlUtils.class
+com\atguigu\hive\udf\StringLengthUDF.class

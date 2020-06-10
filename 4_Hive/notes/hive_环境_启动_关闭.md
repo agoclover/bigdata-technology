@@ -1,3 +1,15 @@
+# HA
+
+```
+1. 开启 zookeeper: zk start
+2. 开启 hdfs: start-dfs.sh
+3. 开启 yarn: start-yarn.sh
+```
+
+
+
+# Hive
+
 hive 环境
 
 ```

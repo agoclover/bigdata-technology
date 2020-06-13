@@ -6,6 +6,7 @@
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/../../../2_zookeeper/projects/pom.xml" />
         <option value="$PROJECT_DIR$/../../../2_zookeeper/zookeeper/pom.xml" />
+        <option value="$PROJECT_DIR$/../../../5_Flume/projects/Flume/pom.xml" />
       </list>
     </option>
   </component>

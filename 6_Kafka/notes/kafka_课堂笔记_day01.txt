@@ -1,0 +1,61 @@
+1.前置知识:
+  1.1. Zookeeper
+  1.2. Flume
+
+
+2.Kafka基础架构关键点:
+  2.1. Kafka集群
+       kafka集群可以有N台机器,每台都称之为broker , 每台机器都有自己的id，
+       因此kafka集群中的N机器为:  broker1  broker2 broker3 .....
+  2.2. Topic
+       kafka集群中可以创建N个Topic
+       每个topic可以有多个分区(partition)
+       每个topic的每个分区可以有多个副本(replication)
+       同一个topic的多个分区可以存在到kafka集群的一个机器.但是同一个topic的同一个分区的多个副本不能
+       存在kafka集群的一个机器.
+
+  2.3  消费者组
+       kafka是以消费者组为单位进行消息消费的.
+       一个消费者组可以有一个消费者或者多个消费者
+
+  2.4  Topic 和 消费者组
+      一个消费者组中的一个消费者可以同时消费一个topic中的多个分区的数据.
+      一个topic中的一个分区只能被一个消费者组中的一个消费者消费.
+      一个tipic中的一个分区能被多个消费者组中的一个消费者消费.
+  
+  2.5  Zookeeper
+       kafka集群工作需要基于zk
+       kafka的topic， partition， replication等需要存储在zk中
+       在kafka 0.9版本之前，消费者组的offset维护在zk中。 
+       但是0.9版本之后建议维护到kafka本地. 当前2.4.1版本中已不在支持zk维护offset.
+
+
+3. Kafka 
+   3.1 Topic 操作
+     1) 创建topic
+        bin/kafka-topics.sh --create --zookeeper hadoop102:2181 --topic first --partitions 2 --replication-factor 2
+    
+     2) 查所有的topic 
+        bin//kafka-topics.sh --list --zookeeper hadoop102:2181
+
+     3) 查看所有topic的详情
+        bin/kafka-topics.sh --describe --zookeeper hadoop102:2181
+	查看某个topic的详情
+	bin/kafka-topics.sh --describe --zookeeper hadoop102:2181 --topic first
+
+     4) 修改topic (一般不用)
+        只能改分区，且只能往大了改
+        bin/kafka-topics.sh --alter --zookeeper hadoop102:2181 --topic first --partitions 3
+
+     5) 删除topic 
+        bin/kafka-topics.sh --delete  --zookeeper hadoop102:2181 --topic second
+
+     
+
+
+作业:
+1. 完成flume的各个案例
+2. 完成flume的自定义interceptor source sink 
+3. 测试flume的ganglia监控
+4. kafka的基本架构 、 安装配置 、 命令行topic的操作
+

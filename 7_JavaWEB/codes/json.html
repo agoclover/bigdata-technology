@@ -1,0 +1,29 @@
+<html>
+	<head>
+		<script type='text/javascript'>
+			// Json对象(JS对象)
+			var jsonObj = {"name":"zhangsan","age":22,"isMarry":false};
+			window.alert(jsonObj);
+			//window.alert(jsonObj.name);
+			//window.alert(jsonObj.age);
+			//window.alert(jsonObj.isMarry);
+
+			// Json对象转换成json字符串
+			var jsonStr = JSON.stringify(jsonObj);
+			window.alert(jsonStr);
+
+			// Json字符串转换重Json对象
+			var jsonObj1 = JSON.parse(jsonStr);
+			window.alert(jsonObj1);
+
+			// Js --> json字符串 --> 发送给java
+			// java对象 --> json字符串 --> js
+		
+		</script>
+	
+	</head>
+
+
+
+	<body></body>
+</html>

@@ -1,0 +1,71 @@
+#! /bin/bash
+if [ $# -lt 1 ]
+then
+	echo "Args Invalid!"
+	exit
+fi
+zkflag=false
+jobflag=false
+
+while [ $# -gt 1 ];do
+    case $1 in
+        -z)
+            shift
+            zkflag=true
+            ;;
+        -j)
+	    shift
+	    jobflag=true	            
+            ;;
+	-zj)
+	    shift
+	    zkflag=true
+	    jobflag=true
+	    ;;
+	-jz)
+	    shift
+	    zkflag=true
+	    jobflag=true
+	    ;;
+	* )
+	    echo "Invalid Arguments!!"
+            exit 1
+            ;;
+    esac
+done
+
+case $1 in
+        "start" )
+	if [ $zkflag = "true" ]
+	then
+		/home/atguigu/bin/zk start
+	fi
+        echo "===================== Start HDFS ======================="
+        ssh hadoop102 /opt/module/hadoop-3.1.3/sbin/start-dfs.sh
+        echo "===================== Start YARN ======================="
+        ssh hadoop103 /opt/module/hadoop-3.1.3/sbin/start-yarn.sh
+	if [ $jobflag = "true" ]
+	then
+        	echo "================ Start  HistoryServer =================="
+        	ssh hadoop102 mapred --daemon start historyserver
+	fi
+	/home/atguigu/bin/myjps
+                ;;
+
+        "stop" )
+	echo "===================== Stop  HDFS ======================="
+        ssh hadoop102 /opt/module/hadoop-3.1.3/sbin/stop-dfs.sh
+	echo "===================== Stop  YARN ======================="
+        ssh hadoop103 /opt/module/hadoop-3.1.3/sbin/stop-yarn.sh
+	echo "================ Stop   HistoryServer =================="
+        ssh hadoop102 mapred --daemon stop historyserver
+	if [ $zkflag = "true" ]
+        then
+                /home/atguigu/bin/zk stop
+        fi
+	/home/atguigu/bin/myjps
+                ;;
+        * )
+        echo "Invalid Arguments!!"
+                ;;
+esac

@@ -1,0 +1,127 @@
+#!/bin/bash
+check(){
+	echo "==========>  check jps"
+	declare -i count
+	count=`myjps | grep -i $1 | wc -l`
+	if [ $count -ne $2 ]
+	then
+		# 0 代表失败
+		return 0
+	else
+		# 1 代表成功
+		return 1
+	fi
+}
+
+if [ $# -lt 1 ]
+then
+	echo "Args Invalid!"
+	exit
+fi
+
+zkflag=false
+
+while [ $# -gt 1 ];do
+    case $1 in
+        -z)
+            shift
+            zkflag=true
+            ;;
+	* )
+	    echo "Invalid Arguments!!"
+            exit 1
+            ;;
+    esac
+done
+
+case $1 in
+        "start" )
+		if [ $zkflag = "true" ]
+		then
+			/home/atguigu/bin/zk start
+			check QuorumPeerMain 3
+            if [[ $? -eq 1 ]]
+            then
+            	myjps
+            	echo "==========>  Zookeeper 开启成功!"
+            fi
+		fi
+        echo "==========>  Start KAFKA on "
+        for i in hadoop102 hadoop103 hadoop104
+		do
+		    echo "$i..." 
+		    ssh $i '$KAFKA_HOME/bin/kafka-server-start.sh -daemon $KAFKA_HOME/config/server.properties'
+		done
+
+		declare -i loop
+		declare -i result
+		loop=5
+		result=0
+		while [[ $loop -gt 0 && $result -lt 1 ]]
+		do
+			check kafka 3
+			if [[ $? -eq 0 ]]
+			then
+				result=0
+				echo "==========>  正在启动 Kafka, 5秒后再次检查..."
+				sleep 5
+			else
+				myjps
+				echo "==========>  Kafka 启动成功!"
+				result=1
+			fi
+			loop=$[$loop - 1]
+		done
+		if [[ $loop -eq 0 ]]
+		then
+			myjps
+			echo "==========>  Kafka 启动失败."
+		fi
+                ;;
+
+        "stop" )
+		echo "==========>  Stop KAFKA on "
+        for i in hadoop102 hadoop103 hadoop104
+		do
+		    echo "$i..." 
+		    ssh $i '$KAFKA_HOME/bin/kafka-server-stop.sh'
+		done
+		declare -i sloop
+		declare -i sresult
+		sloop=5
+		sresult=0
+		while [[ $sloop -gt 0 && $sresult -lt 1 ]]
+		do
+			check kafka 0
+			if [[ $? -eq 0 ]]
+			then
+				sresult=0
+				echo "==========>  正在关闭 Kafka, 5秒后再次检查..."
+				sleep 5
+			else
+				echo "==========>  Kafka 关闭成功!"
+				sresult=1
+			fi
+			sloop=$[$sloop - 1]
+		done
+		if [[ $sloop -eq 0 ]]
+		then
+			echo "==========>  Kafka 关闭失败."
+		fi
+		if [ $zkflag = "true" ]
+        then
+            /home/atguigu/bin/zk stop
+            check QuorumPeerMain 0
+            if [[ $? -eq 1 ]]
+            then
+            	myjps
+            	echo "==========> Zookeeper 关闭成功!"
+            fi
+        fi
+                ;;
+        * )
+        echo "Invalid Arguments!!"
+                ;;
+esac
+
+

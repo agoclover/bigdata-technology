@@ -1,3 +1,4 @@
 /Users/amos/bigdata_learn/5_Flume/projects/Flume/src/main/java/com/atguigu/flume/interceptor/LogInterceptor.java
+/Users/amos/bigdata_learn/5_Flume/projects/Flume/src/main/java/com/atguigu/flume/interceptor/KafkaSelectionInterceptor.java
 /Users/amos/bigdata_learn/5_Flume/projects/Flume/src/main/java/com/atguigu/flume/source/MySource.java
 /Users/amos/bigdata_learn/5_Flume/projects/Flume/src/main/java/com/atguigu/flume/sink/MySink.java

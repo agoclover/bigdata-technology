@@ -8,7 +8,6 @@ import org.apache.flume.conf.Configurable;
 import org.apache.flume.event.SimpleEvent;
 import org.apache.flume.source.AbstractSource;
 
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -67,7 +66,7 @@ public class MySource extends AbstractSource implements Configurable, PollableSo
         // 封装 Event
         SimpleEvent event = new SimpleEvent();
         // 设置 header
-        event.getHeaders().put("id", "uuid");
+//        event.getHeaders().put("id", "uuid");
         // 设置 body
         event.setBody((prefix + log).getBytes());
 

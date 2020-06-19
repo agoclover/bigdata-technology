@@ -1,13 +1,12 @@
 package com.atguigu.kafka.comsumer;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.common.TopicPartition;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -27,6 +26,21 @@ public class MyConsumer {
         // 指定消费者组
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test1");
         // 指定是否自动提交 offset
+        /*
+        自动提交是按照一定时间间隔提交 offset 的.
+        一个消费者组, 第一次启动里面没有 offset, 此时会触发 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, 默认为
+        latest, 即打开后不消费以前的数据, 但能看到新进来的数据.
+
+        当消费数据后, 就会产生新的消费者组的 offset 数据, 表示这个消费者组对某个 topic 消费到了哪里, 当 consumer
+        进程存在时, 此时这个 offset 存在内存里. 这个时候就应该提交 offset, 也就是自动提交, 这样就持久化到 kafka 的
+        记录 offset 的那个 topic 中了 (磁盘内). 但若 ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG = false,
+        那么 offset 就无法提交, 但此时内存中还记录着 offset 信息, 则新生产数据后还是会正常只消费新数据.
+
+        但若此时停掉 consumer 进程, 内存中的 offset 就消失了, 也没有持久化到 kafka 中, kafka 对此消费者组还保留的
+        是上一次打开时最后消费的数据 offset, 所以再次打开这个消费者组就会按照这个 offset 开始消费.
+
+        这个时候可以开启 consumer.commitSync()/consumer.commitAsync() 同步/异步提交, 那么就会记录消费的 offset 了.
+         */
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
         // 指定 offset 的间隔
         props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
@@ -45,7 +59,7 @@ public class MyConsumer {
         none: throw exception to the consumer if no previous offset is found for the consumer's group
         anything else: throw exception to the consumer.
 
-        Type: stringDefault: latestValid Values: [latest, earliest, none]Importance: medium
+        Type: string Default: latest Valid Values: [latest, earliest, none]Importance: medium
 
          */
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -83,6 +97,21 @@ public class MyConsumer {
                         record.key(),
                         record.value());
             }
+
+            // 开启同步提交: 消费一个提交一个
+            consumer.commitSync();
+            // 开启异步提交: 一边消费, 一边提交
+//            consumer.commitAsync();
+            consumer.commitAsync(new OffsetCommitCallback() {
+                @Override
+                public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
+                    if (exception != null) {
+                        System.out.println("Error");
+                    } else {
+                        System.out.println(offsets);
+                    }
+                }
+            });
         }
     }
 }

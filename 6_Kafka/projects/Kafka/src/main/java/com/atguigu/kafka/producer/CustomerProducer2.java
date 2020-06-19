@@ -5,8 +5,6 @@ import org.apache.kafka.clients.producer.*;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>CustomerProducer2 </p>
@@ -56,49 +54,7 @@ public class CustomerProducer2 {
 //            }
 
             // 带回调函数消息, 异步发送测试
-//            producer.send(new ProducerRecord("first", i + "--> " + UUID.randomUUID().toString()),
-//                    new Callback() {
-//                        /**
-//                         * A callback method the user can implement to provide asynchronous handling of request completion. This method will
-//                         * be called when the record sent to the server has been acknowledged. When exception is not null in the callback,
-//                         * metadata will contain the special -1 value for all fields except for topicPartition, which will be valid.
-//                         *
-//                         * @param metadata  The metadata for the record that was sent (i.e. the partition and offset). An empty metadata
-//                         *                  with -1 value for all fields except for topicPartition will be returned if an error occurred.
-//                         * @param exception The exception thrown during processing of this record. Null if no error occurred.
-//                         *                  Possible thrown exceptions include:
-//                         *                  <p>
-//                         *                  Non-Retriable exceptions (fatal, the message will never be sent):
-//                         *                  <p>
-//                         *                  InvalidTopicException
-//                         *                  OffsetMetadataTooLargeException
-//                         *                  RecordBatchTooLargeException
-//                         *                  RecordTooLargeException
-//                         *                  UnknownServerException
-//                         *                  <p>
-//                         *                  Retriable exceptions (transient, may be covered by increasing #.retries):
-//                         *                  <p>
-//                         *                  CorruptRecordException
-//                         *                  InvalidMetadataException
-//                         *                  NotEnoughReplicasAfterAppendException
-//                         *                  NotEnoughReplicasException
-//                         *                  OffsetOutOfRangeException
-//                         *                  TimeoutException
-//                         */
-//                        @Override
-//                        public void onCompletion(RecordMetadata metadata, Exception exception) {
-//                            if (exception != null) {
-//                                System.out.println("Data failure. " + metadata.offset());
-//                            } else {
-//                                System.out.println(metadata.topic() + " -- " +
-//                                        metadata.partition() + " -- " +
-//                                        metadata.offset());
-//                            }
-//                        }
-//                    });
-
-            // 带回调函数消息, 同步发送测试
-            Future future = producer.send(new ProducerRecord("first", i + "--> " + UUID.randomUUID().toString()),
+            producer.send(new ProducerRecord("first", i + "--> " + UUID.randomUUID().toString()),
                     new Callback() {
                         /**
                          * A callback method the user can implement to provide asynchronous handling of request completion. This method will
@@ -138,7 +94,49 @@ public class CustomerProducer2 {
                             }
                         }
                     });
-            System.out.println("=== 消息发送完成 ===");
+
+            // 带回调函数消息, 同步发送测试
+//            Future future = producer.send(new ProducerRecord("first", i + "--> " + UUID.randomUUID().toString()),
+//                    new Callback() {
+//                        /**
+//                         * A callback method the user can implement to provide asynchronous handling of request completion. This method will
+//                         * be called when the record sent to the server has been acknowledged. When exception is not null in the callback,
+//                         * metadata will contain the special -1 value for all fields except for topicPartition, which will be valid.
+//                         *
+//                         * @param metadata  The metadata for the record that was sent (i.e. the partition and offset). An empty metadata
+//                         *                  with -1 value for all fields except for topicPartition will be returned if an error occurred.
+//                         * @param exception The exception thrown during processing of this record. Null if no error occurred.
+//                         *                  Possible thrown exceptions include:
+//                         *                  <p>
+//                         *                  Non-Retriable exceptions (fatal, the message will never be sent):
+//                         *                  <p>
+//                         *                  InvalidTopicException
+//                         *                  OffsetMetadataTooLargeException
+//                         *                  RecordBatchTooLargeException
+//                         *                  RecordTooLargeException
+//                         *                  UnknownServerException
+//                         *                  <p>
+//                         *                  Retriable exceptions (transient, may be covered by increasing #.retries):
+//                         *                  <p>
+//                         *                  CorruptRecordException
+//                         *                  InvalidMetadataException
+//                         *                  NotEnoughReplicasAfterAppendException
+//                         *                  NotEnoughReplicasException
+//                         *                  OffsetOutOfRangeException
+//                         *                  TimeoutException
+//                         */
+//                        @Override
+//                        public void onCompletion(RecordMetadata metadata, Exception exception) {
+//                            if (exception != null) {
+//                                System.out.println("Data failure. " + metadata.offset());
+//                            } else {
+//                                System.out.println(metadata.topic() + " -- " +
+//                                        metadata.partition() + " -- " +
+//                                        metadata.offset());
+//                            }
+//                        }
+//                    });
+//            System.out.println("=== 消息发送完成 ===");
             /*
             阻塞线程, 直到 get() 方法返回结果.
             这是一个 JUC, 即 java.util.concurrent 多线程包. 需要看看.
@@ -170,16 +168,16 @@ public class CustomerProducer2 {
             first -- 0 -- 455
             first -- 0 -- 456
              */
-            Object o = future.get();
+//            Object o = future.get();
 
         }
 
         // 等待 1 second
 //        Thread.sleep(1000);
 //        TimeUnit.MILLISECONDS.sleep(1000);
-        TimeUnit.SECONDS.sleep(1);
+//        TimeUnit.SECONDS.sleep(1);
 
-//        producer.close();
+        producer.close();
         /*
         producer.close() 这个函数一个作用就是先确保消息发送, 再关闭相应生产者. 所以加上 close() 一方面会让我们的生产者关闭, 但另一方面还会
         保证消息的发出.

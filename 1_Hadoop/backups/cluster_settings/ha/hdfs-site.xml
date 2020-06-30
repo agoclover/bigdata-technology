@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+        <!-- 指定副本数  -->
+	<property>
+	    <name>dfs.replication</name>
+	    <value>3</value>
+        </property>
+	
+	<property>
+  	<name>dfs.nameservices</name>
+  		<value>mycluster</value>
+	</property>
+
+	<!-- 指定NameNode数据的存储目录 -->
+ 	<property>
+    	<name>dfs.namenode.name.dir</name>
+    	<value>file://${hadoop.data.dir}/name</value>
+  	</property>
+ 	
+ 	<!-- 指定Datanode数据的存储目录 -->
+	<property>
+   		<name>dfs.datanode.data.dir</name>
+    	<value>file://${hadoop.data.dir}/data</value>
+  	</property>
+	
+	<!-- 集群中NameNode节点都有哪些 -->
+	<property>
+		<name>dfs.ha.namenodes.mycluster</name>
+		<value>nn1,nn2,nn3</value>
+	</property>
+
+	<!-- nn1的RPC通信地址 -->
+	<property>
+		<name>dfs.namenode.rpc-address.mycluster.nn1</name>
+		<value>hadoop102:9000</value>
+	</property>
+
+	<!-- nn2的RPC通信地址 -->
+	<property>
+		<name>dfs.namenode.rpc-address.mycluster.nn2</name>
+		<value>hadoop103:9000</value>
+	</property>
+	<!-- nn3的RPC通信地址 -->
+	<property>
+		<name>dfs.namenode.rpc-address.mycluster.nn3</name>
+		<value>hadoop104:9000</value>
+	</property>
+        	<!-- nn1的http通信地址 -->
+	<property>
+		<name>dfs.namenode.http-address.mycluster.nn1</name>
+		<value>hadoop102:9870</value>
+	</property>
+
+	<!-- nn2的http通信地址 -->
+	<property>
+		<name>dfs.namenode.http-address.mycluster.nn2</name>
+		<value>hadoop103:9870</value>
+	</property>
+	<!-- nn3的http通信地址 -->
+	<property>
+		<name>dfs.namenode.http-address.mycluster.nn3</name>
+		<value>hadoop104:9870</value>
+	</property>
+
+	<!-- 指定NameNode元数据在JournalNode上的存放位置 -->
+	<property>
+		<name>dfs.namenode.shared.edits.dir</name>
+	<value>qjournal://hadoop102:8485;hadoop103:8485;hadoop104:8485/mycluster</value>
+	</property>
+        
+        <!-- 配置隔离机制，即同一时刻只能有一台服务器对外响应 -->
+	<property>
+		<name>dfs.ha.fencing.methods</name>
+		<value>sshfence</value>
+	</property>
+
+	<!-- 使用隔离机制时需要ssh无秘钥登录-->
+	<property>
+		<name>dfs.ha.fencing.ssh.private-key-files</name>
+		<value>/home/atguigu/.ssh/id_rsa</value>
+	</property>
+
+	<!-- 访问代理类：client用于确定哪个NameNode为Active -->
+	<property>
+		<name>dfs.client.failover.proxy.provider.mycluster</name>
+		<value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
+	</property>
+	
+	<!-- 开启 HA 自动故障转移 -->
+	<property>
+		<name>dfs.ha.automatic-failover.enabled</name>
+		<value>true</value>
+	</property>
+    
+   	<!-- 兼容配置，先跳过 -->
+        <property>
+    	        <name>dfs.client.datanode-restart.timeout</name>
+    		<value>30s</value>
+  	</property>
+
+</configuration>

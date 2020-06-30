@@ -1,4 +1,4 @@
-package com.atguigu.scala.myscala
+package com.atguigu.myscala
 
 /**
  * <p>Title: </p>

@@ -16,7 +16,7 @@ object Scala09_TestFactorial {
       n * factorial(n-1)
     }*/
 
-    if(n == 1){
+    if(n == 1){ // 如果不加return, 1 返回给 if, 接着执行 n * factorial(n-1), 会导致死循环
       return 1
     }
     n * factorial(n-1)

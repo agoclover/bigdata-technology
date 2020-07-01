@@ -8,5 +8,21 @@
     <artifactId>myscala</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-
+    <dependencies>
+        <dependency>
+            <groupId>org.typelevel</groupId>
+            <artifactId>spire_2.11</artifactId>
+            <version>0.14.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.typelevel</groupId>
+            <artifactId>machinist_2.11</artifactId>
+            <version>0.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.typelevel</groupId>
+            <artifactId>algebra_2.11</artifactId>
+            <version>0.7.0</version>
+        </dependency>
+    </dependencies>
 </project>

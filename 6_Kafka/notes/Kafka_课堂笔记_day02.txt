@@ -1,0 +1,42 @@
+1. 问题:
+   1.1  启动了一个新的消费组的一个消费者，去消费有消息的主题，消费不到数据.
+
+
+
+2. 命令行操作生产者和消费者
+  2.1 启动生产者
+      bin/kafka-console-producer.sh --topic first --broker-list hadoop102:9092
+  2.2 启动消费者
+      bin/kafka-console-consumer.sh --topic first --bootstrap-server hadoop102:9092
+      bin/kafka-console-consumer.sh --topic first --bootstrap-server hadoop102:9092 --from-beginning（从头消费）
+
+
+3. 生产者
+  3.1 分区策略
+     1) 在构造ProducerRecord对象(topic,partition,value)  / (topic,partition,key,value)
+        因为具体指定过partition, 消息会发布到指定的partition中.
+        
+     2) 在构造ProducerRecord对象(topic,key,value)
+	没有具体指定partition,但是提供了key, kafka会按照key的hash值对partition的个数取余，
+	得出当前消息发布到哪个partition
+
+     3) 在构造ProducerRecord对象(topic,value)
+        在老版本中:  第一次随机生成一个数字N，对partition的个数取余，得出发布到哪个partition，
+	             后续每次会执行N++的操作，再对partition的个数取余，得出发布到哪个partition。
+		     实际上就是轮询的效果.
+		     该效果在老版本中是通过DefaultPartition类来实现的.
+		     在当前版本中,是通过RoundRobinPartitioner类实现的.
+
+        在当前版本中:  会随机一个分区, 然后尽可能一直使用该分区，待该分区的缓冲区(batch)满或者
+	               超过指定时间后，会重新随机一个分区来使用.
+		       该效果在当前版本中是通过DefaultPartition类来实现的
+
+
+
+
+作业:
+1. 理解kafka的原理内容
+
+2. 生产者API编码
+
+3. 尝试测试 ProducerRecord的重载, topic, partition , key ,value 

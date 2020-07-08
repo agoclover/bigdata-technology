@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+<configuration>
+
+    <!-- RM HA -->
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+
+    <!--启用resourcemanager ha-->
+    <property>
+        <name>yarn.resourcemanager.ha.enabled</name>
+        <value>true</value>
+    </property>
+ 
+    <!--声明HA resourcemanager的地址-->
+    <property>
+        <name>yarn.resourcemanager.cluster-id</name>
+        <value>cluster-yarn1</value>
+    </property>
+    
+    <!-- 指定RM的逻辑列表 -->
+    <property>
+        <name>yarn.resourcemanager.ha.rm-ids</name>
+        <value>rm1,rm2,rm3</value>
+    </property>
+
+    <!--  =========== rm1 配置============  --> 
+    <!-- 指定rm1 的主机名 -->
+    <property>
+        <name>yarn.resourcemanager.hostname.rm1</name>
+        <value>hadoop102</value>
+    </property>
+    <!-- 指定rm1的web端地址 -->
+    <property>
+        <name>yarn.resourcemanager.webapp.address.rm1</name>
+        <value>hadoop102:8088</value>
+    </property>
+    <!-- 指定rm1的内部通信地址 -->
+    <property>
+        <name>yarn.resourcemanager.address.rm1</name>
+        <value>hadoop102:8032</value>
+    </property>
+    <!-- 指定AM向rm1申请资源的地址 -->
+    <property>
+        <name>yarn.resourcemanager.scheduler.address.rm1</name>  
+        <value>hadoop102:8030</value>
+    </property>
+    <!-- 指定供NM连接的地址 -->  
+    <property>
+        <name>yarn.resourcemanager.resource-tracker.address.rm1</name>
+        <value>hadoop102:8031</value>
+    </property>
+
+    <!--  =========== rm2 配置============  --> 
+    <property>
+        <name>yarn.resourcemanager.hostname.rm2</name>
+        <value>hadoop103</value>
+    </property>
+
+    <property>
+        <name>yarn.resourcemanager.webapp.address.rm2</name>
+        <value>hadoop103:8088</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.address.rm2</name>
+        <value>hadoop103:8032</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.address.rm2</name>
+        <value>hadoop103:8030</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.resource-tracker.address.rm2</name>
+        <value>hadoop103:8031</value>
+    </property>
+
+    <!--  =========== rm3 配置============  --> 
+    <property>
+        <name>yarn.resourcemanager.hostname.rm3</name>
+        <value>hadoop104</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.webapp.address.rm3</name>
+        <value>hadoop104:8088</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.address.rm3</name>
+        <value>hadoop104:8032</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.address.rm3</name>
+        <value>hadoop104:8030</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.resource-tracker.address.rm3</name>
+        <value>hadoop104:8031</value>
+    </property>
+ 
+    <!--指定zookeeper集群的地址--> 
+    <property>
+        <name>yarn.resourcemanager.zk-address</name>
+        <value>hadoop102:2181,hadoop103:2181,hadoop104:2181</value>
+    </property>
+
+    <!--启用自动恢复--> 
+    <property>
+        <name>yarn.resourcemanager.recovery.enabled</name>
+        <value>true</value>
+    </property>
+    <!--指定resourcemanager的状态信息存储在zookeeper集群--> 
+    <property>
+        <name>yarn.resourcemanager.store.class</name>     <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value>
+    </property>
+ 
+    <!-- 环境变量的继承 -->
+    <property>
+        <name>yarn.nodemanager.env-whitelist</name>
+        <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_MAPRED_HOME</value>
+    </property>
+
+    <!-- 配置日志的聚集 -->
+    <property>
+        <name>yarn.log-aggregation-enable</name>
+        <value>true</value>
+    </property>
+    <property>  
+        <name>yarn.log.server.url</name>  
+        <value>http://hadoop102:19888/jobhistory/logs</value>  
+    </property> 
+    <property>
+        <name>yarn.log-aggregation.retain-seconds</name>
+        <value>604800</value>
+    </property>
+
+    <!-- JVM 堆内存溢出 -->
+    <!-- java.lang.OutOfMemoryError: Java heap space -->
+    <property>
+	<name>yarn.scheduler.maximum-allocation-mb</name>
+	<value>2048</value>
+    </property>
+    <property>
+  	<name>yarn.scheduler.minimum-allocation-mb</name>
+  	<value>2048</value>
+    </property>
+    <property>
+	<name>yarn.nodemanager.vmem-pmem-ratio</name>
+	<value>2.1</value>
+    </property>
+    <property>
+	<name>mapred.child.java.opts</name>
+	<value>-Xmx1024m</value>
+    </property>
+    <!-- 取消虚拟内存的限制 -->
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+    </property>
+
+</configuration>

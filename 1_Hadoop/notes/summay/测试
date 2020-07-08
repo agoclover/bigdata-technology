@@ -1,0 +1,14 @@
+测试
+
+
+代理情况:
+socks5 监听端口: 1086
+PAC 监听端口: 8090
+http 代理 监听端口: 1087
+
+测试仓库
+https://github.com/penrose/penrose.git
+
+1. 状态
+white mode on
+

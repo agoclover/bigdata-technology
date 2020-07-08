@@ -1,0 +1,2 @@
+2020-06-09T15:22:16,021  INFO [pool-6-thread-4] metastore.HiveMetaStore: 4: source:192.168.202.102 get_config_value: name=metastore.batch.retrieve.max defaultValue=50
+2020-06-09T15:22:16,021  INFO [pool-6-thread-4] HiveMetaStore.audit: ugi=atguigu	ip=192.168.202.102	cmd=source:192.168.202.102 get_config_value: name=metastore.batch.retrieve.max defaultValue=50	

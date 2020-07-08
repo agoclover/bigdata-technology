@@ -1,0 +1,120 @@
+1. OutputFormat  数据输出 
+     1) 相关方法
+	 getRecordWriter(): 获取RecordWriter对象,负责数据的写出操作.
+	 checkOutputSpecs(): 检查输出路径
+     2) 子抽象类 FileOutputFormat
+         checkOutputSpecs(): 对该方法做了具体的实现.
+	    相关异常： Output directory " + outDir + " already exists"
+     3) 具体实现类
+         TextOutputFormat  hadoop默认使用的
+	    LineRecordWriter
+         SequenceFileOutputFormat : 最终写出的文件是二进制格式的，所谓的sequenceFile
+     
+     4) 自定义的OutputFormat 
+        
+	（1）. 自定义类继承 FileOutputFormat
+	（2）. 自定义RecordWriter对象, 完成数据的写出操作.
+
+2. MR源码解读: 
+
+Job提交流程
+
+一. 从Driver类中的提交job开始
+    job.waitForCompletion(true);
+    
+    1. submit(); 进行提交
+       
+       1.1 > ensureState(JobState.DEFINE); 再次确认Job的状态
+       1.2 > setUseNewAPI(); 设置使用新的API
+       1.3 > connect(); 明确当前提交的Job运行的环境是本地还是集群
+           1.3.1 > return new Cluster(getConfiguration()); 创建 Cluster对象   
+	        1.3.1.1 > initialize(jobTrackAddr, conf); 
+		          ① >  initProviderList(); 获取Job运行的环境列表
+				   YarnClientProtocolProvider ==>集群环境
+				   LocalClientProtocolProvider==>本地环境
+
+                          ② > 根据Provider结合当前的conf判断是哪个环境
+			        YarnClientProtocolProvider ==>  YarnRunner 
+				LocalClientProtocolProvider==>  LocalJobRunner
+      1.4 >  final JobSubmitter submitter = 
+                  getJobSubmitter(cluster.getFileSystem(), cluster.getClient()); //构造Job提交器对象
+		  
+      1.5 >   return submitter.submitJobInternal(Job.this, cluster); 通过JobSubmitter提交Job
+           1.5.1 >  checkSpecs(job);  校验输出路径
+	   1.5.2 >  Path jobStagingArea = JobSubmissionFiles.getStagingDir(cluster, conf); //获取Job的临时工作目录
+	            D:/tmp/hadoop/mapred/staging/Administrator1590679188/.staging
+           1.5.3 >  JobID jobId = submitClient.getNewJobID(); //为当前Job生成JodId
+		    job_local11590679188_001
+           
+	   1.5.4 >  Path submitJobDir = new Path(jobStagingArea, jobId.toString()); //生成Job提交路径
+		    D:/tmp/hadoop/mapred/staging/Administrator1590679188/.staging/job_local11590679188_001
+          
+           1.5.5 >  copyAndConfigureFiles(job, submitJobDir); //拷贝Job相关的配置信息
+	            ①  将job的提交路径在磁盘中创建出来
+
+           1.5.6 >  int maps = writeSplits(job, submitJobDir); //生成切片信息
+	         1.5.6.1 >  maps = writeNewSplits(job, jobSubmitDir); //生成切片
+		            
+			    ① InputFormat<?, ?> input =
+                                  ReflectionUtils.newInstance(job.getInputFormatClass(), conf); // 获取InputFormat
+
+                            ② List<InputSplit> splits = input.getSplits(job); //生成切片
+			       切片对象: file:///D:/input/inputWord/JaneEyre.txt:0+36306679  
+                            ③ return array.length;  //返回切片的个数
+                    最终在job的提交路径中有两个文件:
+		      job.split
+		      job.splitmetainfo
+
+          1.5.7 >  conf.setInt(MRJobConfig.NUM_MAPS, maps);  //根据切片的个数设置启动多少个MapTask
+	  
+	  1.5.8 >  writeConf(conf, submitJobFile);  //把job的所有配置信息写到job的提交路径下
+	           最终在job的提交路径下有一个文件:
+		     job.xml
+          1.5.9 >  status = submitClient.submitJob(
+			jobId, submitJobDir.toString(), job.getCredentials());  // 真正将job提交进行执行
+         
+	  1.5.10>  jtFs.delete(submitJobDir, true);  // 最后删除Job提交路径.
+
+MapTask流程
+一. 从Job提交流程的 1.5.9 开始进入到MapTask的执行
+    status = submitClient.submitJob(
+			jobId, submitJobDir.toString(), job.getCredentials());
+    1 >. Job job = new Job(JobID.downgrade(jobid), jobSubmitDir);  //创建一个可以真正执行的Job
+       Job: LocalJobRunner$Job  , 且 是一个线程
+    2 >. 因为当前的Job对象是一个线程，所有执行线程要执行run方法，因此直接找到Job的run方法进行查看
+       2.1 >   TaskSplitMetaInfo[] taskSplitMetaInfos = 
+			SplitMetaInfoReader.readSplitMetaInfo(jobId, localFs, conf, systemJobDir);
+               // 读取切片的metainfo信息.
+
+       2.2 >  List<RunnableWithThrowable> mapRunnables = getMapTaskRunnables(
+               taskSplitMetaInfos, jobId, mapOutputFiles);
+	       //根据切片的metainfo信息，可以得出有多少个切片，再生成对应个数的Runnable对象.
+	       Runnable : LocalJobRunnber$Job$MapTaskRunnable
+       2.3 >   ExecutorService mapService = createMapExecutor(); // 创建线程池对象
+       
+       2.4 >   runTasks(mapRunnables, mapService, "map");  // 将所有的LocalJobRunnber$Job$MapTaskRunnable对象提交给线程池执行
+             
+	      2.4.1 > for (Runnable r : runnables) {
+			service.submit(r);
+		      }
+		      //取出每个LocalJobRunnber$Job$MapTaskRunnable，交给一个线程去执行. 
+
+              2.4.2 > LocalJobRunnber$Job$MapTaskRunnable交给每个线程执行时，会执行到 LocalJobRunnber$Job$MapTaskRunnable的run方法
+	              因此接下来看LocalJobRunnber$Job$MapTaskRunnable的run方法
+
+
+
+Shuffle流程
+
+
+ReduceTask流程
+
+
+
+
+
+
+        
+   
+
+   

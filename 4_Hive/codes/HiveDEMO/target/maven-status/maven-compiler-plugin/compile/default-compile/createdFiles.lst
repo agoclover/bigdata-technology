@@ -1,0 +1,3 @@
+com\atguigu\hive\udf\StringLengthUDF.class
+com\atguigu\hive\udtf\StringSplitUDTF.class
+com\atguigu\hive\udtf\StringSplitUDTF2.class

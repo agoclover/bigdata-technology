@@ -1,0 +1,65 @@
+HA问题:
+1. 搭建好HA后，通过start-dfs.sh启动集群,发现NameNode会掉.但是重新启动NameNode后，就正常运行 
+   
+   在HA集群中,NameNode启动后，需要找到JN，但是start-dfs.sh脚本启动的顺序是先起NN，后起JN，
+   因此可能因为NN启动后，尝试连接JN，但是JN还没有启动起来. 超时以后，NN自动掉了.
+   
+   相关的两个配置:
+  1) 最大重试次数
+  <property>
+	<name>ipc.client.connect.max.retries</name>
+	<value>10</value>
+  </property>
+  2) 每次重试的间隔
+  <property>
+      <name>ipc.client.connect.retry.interval</name>
+      <value>1000</value>
+  </property>
+
+Hive：
+
+1. 前置知识: 
+   1) SQL技能: MySQL 
+   2) Hadoop框架: HDFS + MapReduce 
+
+
+2. Hive是什么
+   Hive是FaceBook开源的海量结构化数据的分析框架.
+   Hive的本质是将结构化的数据映射成一张表，最终表被翻译为MR程序.
+   底层还是通过MR作为计算引擎，HDFS作为存储，Yarn作为资源调度.
+
+3. Hive的架构:
+   Hive计算的数据存储在HDFS
+   Hive的元数据信息(表的信息)存储在第三方的数据库中，默认使用的derby,我们会换成mysql. 
+
+
+4. Hive的访问:
+   4.1 Hive JDBC  
+       $HIVE_HOME/bin/beeline -u jdbc:hive2://hadoop102:10000  -n atguigu
+
+   4.2 beeline方式出现问题后:
+       1) 查看hiveserver2服务是否正常运行
+       2) 查看hadoop中 core-site.xml中是否有加兼容配置
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   

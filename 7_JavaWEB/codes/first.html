@@ -1,0 +1,160 @@
+<!--  
+    这个是注释
+	<html></html>: 根标记
+	<head></head>: 头标记
+	<body></body>: 体标记
+-->
+
+<html>
+	<head>
+		<!-- 主要写描述页面的信息 -->
+		<title>First HTML</title>
+		
+		<!-- CSS: 美化页面，一般写到head标签中，或者写到单独的css文件中，再引入到HTML中-->
+		<style>
+			#d1{
+			   width: 300px;
+			   height: 200px;
+			   border: 2px solid green ;
+			   background-color: red ;
+			}			
+			
+		</style>
+
+		<!-- JavaScript: 页面交互，让页面动起来 ， 一般写在head标签中，也可以单独写到js文件中，再引入到HTML中-->
+		
+		<script type='text/javascript' src='jquery-1.7.2.min.js'></script>
+		<script type="text/javascript">
+			//弹窗
+			//window.alert("就想弹个窗");
+			
+			//定义变量
+			// 弱类型语言
+			//var i = 1000 ;
+			//window.alert(i);
+			//window.alert(typeof i) ;  // number
+			//i = 'abc' ;         
+			//window.alert(typeof i) ;  // string
+			//i= false; 
+			//window.alert(typeof i) ;  // boolean	 
+			//i={} ; 
+            // window.alert(typeof i) ;  // object		
+
+			//定义函数
+			//function  sum(i,j){
+			 // alert(i+j);
+			//}
+
+			//调用函数
+			//sum(1,2);
+
+			function loadsuccess(){
+				alert('页面加载完毕了....');
+			}
+
+			function clickpassword(){
+				//获取密码框
+				// Dom: 文档对象模型.
+				var passwordEle = document.getElementById('password');
+
+				var passwordEletype = passwordEle.type;
+				if(passwordEletype=='text'){
+					passwordEle.type = 'password';
+		
+				}else{
+				    passwordEle.type = 'text';
+				}
+
+			}	
+	
+			// JQuery的语法
+			$(function(){  //类似于onload,当页面加载完毕就会执行里面的代码
+		
+				//alert('页面加载完毕了。。。。。');
+
+				//动态绑定事件
+				//$("#smalleye").click(function(){
+					
+				//});
+
+				$("#smalleye").toggle(
+					function(){
+						//alert('1')
+						//$('#password').attr('type','text');
+						document.getElementById('password').type='text';
+					},
+				    function(){
+						//alert('2');
+						//$('#password').attr('type','password');
+						document.getElementById('password').type='password';
+					}
+				);
+			});
+
+		</script>
+
+	</head>
+	<!-- <body   onload='loadsuccess();' >   -->
+		<!-- 主要写页面要展示的内容 -->
+		This is my first HTML Page . 
+		<!-- hr: 分割线-->
+		<hr/>
+		<!-- a:  超链接-->
+		<a href="http://www.atguigu.com">国际知名网站</a>
+		<!-- br: 换行符-->
+		<br/>
+
+		<!-- img:图片-->
+		<a href="http://www.atguigu.com">
+		<img src="fangfang.jpg" style='width:400px;height=300px'></img>
+		<a/>
+		<hr/>
+
+		<!-- form: 表单 , 可以收集用户的信息，例如注册页面，登录页面等
+		          action : 指定表单提交的地址
+				  method : 指定表单提交的方式
+		-->
+		<form action=''  method=''>
+			用户名称:<input type='text' name='username'>
+			<br/>
+			用户密码:<input id='password' type='password' name='password'>
+					<!-- <input type='button' value='小眼睛' onclick='clickpassword();'/> -->
+					<input  id='smalleye' type='button' value='小眼睛' />
+			<br/>
+			用户性别: 男 <input type='radio' name='gender' value='1'>
+			          女 <input type='radio' name='gender' value='0'> 
+            <br/>
+
+			用户爱好: 吃饭 <input type='checkbox' name='hobby' value='cf'>
+				      睡觉觉 <input type='checkbox' name='hobby' value='sj'>
+					  编代码 <input type='checkbox' name='hobby' value='cd'> 
+            <br/>
+
+			<input type='submit' value='REGIST'>
+		</form>
+
+		<hr/>
+		
+		<div id='d1'></div>
+		
+		<hr/>
+
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+		<br/>
+
+	</body>
+</html>

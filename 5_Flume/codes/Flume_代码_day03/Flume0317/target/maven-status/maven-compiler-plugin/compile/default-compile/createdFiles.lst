@@ -1,0 +1,4 @@
+com\atguigu\flume\sink\MySink.class
+com\atguigu\flume\interceptor\LogInterceptor.class
+com\atguigu\flume\interceptor\LogInterceptor$MyBuilder.class
+com\atguigu\flume\source\MySource.class

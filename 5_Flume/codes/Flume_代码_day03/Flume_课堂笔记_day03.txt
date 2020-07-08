@@ -1,0 +1,33 @@
+回顾
+1. Flume是分布式,高可靠，高可用的 ， 用于海量日志的采集、聚合、传输的框架.
+2. Flume的架构:
+    Agent: jvm进程.
+      Source : 对接日志的来源(采集)
+      Channel: 用于Source到Sink的缓冲.
+      Sink:    对接日志的去向
+3. Source的类型
+      netcat source : 从端口采集日志数据
+      exec source   : 执行linux命令. 一般都是 tail -F ， 从某个文件中采集日志数据
+      spooling Directory Source* : 从某个目录下的多个新文件中采集数据
+      Tail dir Source* : 从某个目录下的多个文件中采集数据(断点续传)
+      Avro Source* :  从Avro Sink中采集数据
+4. Channel的类型
+      Memory Channel* : event数据在内存中
+      File  Channel  : event数据在磁盘中
+5. Sink的类型
+      Logger  sink   : 通过日志的方式打印采集的日志数据
+      Hdfs    sink*  : 将日志数据写到hdfs中
+      Avro    sink*  : 对接Avro Source  
+      File_roll sink : 往本地磁盘写  
+
+6. Channel Selector : (一个Source对接多个channel)
+	Replicating Channel Selector : 副本/复制 
+	Multiplexing Channel Selector: 多路复用.
+
+7. Sink Processor : (一个Channel对接多个Sink)
+        DefaultSinkProcessor ：默认的，只有一个Sink
+	LoadBalancingSinkSProcessor:  负载均衡 .  round_robin  / random
+	FailoverSinkProcessor: 故障转移
+
+8. Flume Agent的内部流程:
+   日志 --> Source--> event(日志) --> Channel Processor --> Interceptors -->Channel Selector  --> Channel Processor --> Channel --> SinkProcessor  --> Sink  --> HDFS  

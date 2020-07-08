@@ -1,0 +1,121 @@
+1. 前置知识:
+   1) Hadoop 
+   2) Zookeeper
+
+2. 目前Hadoop集群存在的问题:
+   2.1  如果NameNode故障后，应该怎么办?
+      
+      1)因为NameNode是HDFS的中心.所有的DN都要围绕着NN工作,如果NN故障后，整个HDFS不能在正常进行服务.
+      
+      2)如上的问题就是比较典型的单点故障.
+      
+      3)解决办法是: 搭建多个NameNode,其中一个是Active状态，就是正常对外提供服务.
+                    其他的NameNode都是standby状态,是不能对外提供服务的.只有当Active的NN故障后,
+		    StandBy状态的NN才有机会上位，代替之前的NN对外提供服务.
+      4)待解决问题:
+        a. 多个StandBy NN 如何保证与 Active NN 中的数据保持一致?
+	   
+	   使用journalNode做为共享存储， ActiveNN 将edits写到JN中， StandByNN 从JN中读取edits
+	   在内存中进行重构，重构完后，就能保障StantByNN 和ActiveNN元数据一致.
+           
+	   对于2NN所负责的事，StandByNN就可以完成.
+	   
+	b. 多个StandBy NN 之间的争夺上位问题 
+
+	   脑裂问题: 一个集群中出现多个Active的NN
+
+	   手动故障转移: 完全由开发人员控制.
+
+	   自动故障转移: 争抢. 每个NN都对应一个ZKFC进程(Zookeeper的客户端对象), ZKFC负责监控NN的健康状态
+	                        以及故障转移. 
+				ZKFC会在自己所维护的NN为健康状态的情况下，到ZK中争抢znode锁，如果获取锁成功，
+				则将自己所维护的NN切换为Active状态.
+				如果ZKFC所维护的NN为Active状态，当NN不健康后(ZKFC认为的),zkfc会断开与zk的连接
+				,这样的话，在zk中拥有的锁也就释放，别的ZKFC发现没有别的ZKFC拥有锁的情况下，
+				会尝试获取Znode锁，如果获取成功，则将自己所维护的NN切换为Active状态. 从而
+				实现自动故障转移.
+	   自动故障转移如何解决脑裂问题:
+		一个ZKFC所负责的NN为Active状态,当ZKFC认为NN不健康后，会触发自动故障转移,
+		此时，其他的ZKFC会尝试获取znode锁，假如获取成功, 为了保证不出现脑裂问题，
+		会SSH到原先ActiveNN的机器，执行Kill Namenode的命令. 扫清一切障碍后,
+		然后才会将自己负责的NN切换为Active状态.
+
+
+
+   2.2  如果ResourceManager故障后，应该怎么办?
+
+
+3. HDFS HA 搭建:
+   1) 安装Hadoop,修改配置文件(参考文档)
+   2) 修改环境变量  HADOOP_HOME ,配置成ha集群的位置
+      例如: HADOOP_HOME=/opt/module/ha/hadoop-3.1.3
+   3) 避免一些不必须的问题，删除每台机器/tmp目录下的内容
+   4) 在每台机器启动JN:
+      hdfs --daemon  start journalnode
+   5) 在任意一台nn上进行格式化操作,例如:nn1
+      nn1: hdfs namenode -format
+   6) 其他的nn同步nn1的数据
+      nn1: hdfs --daemon start namenode 
+      nn2: hdfs namenode -bootstrapStandBy
+      nn3: hdfs namenode -bootstrapStandBy
+   7) 启动nn2 nn3
+      nn2: hdfs --daemon start namenode 
+      nn3: hdfs --daemon start namenode 
+
+   8) 在每台机器上启动DN
+      hdfs --daemon start datanode
+   
+   9) 将其中的一个nn切换成Active状态
+      hdfs haadmin -transitionToActive nn1
+   
+   
+
+4. 自动故障转移HDFS HA 集群规划: 
+   hadoop102 :   Namenode  Datanode JournalNode   ZKFC    ZK
+   hadoop103 :   Namenode  Datanode JournalNode   ZKFC    ZK
+   hadoop104 :   Namenode  Datanode JournalNode   ZKFC    ZK
+
+5. 自动故障转移HDFSHA 搭建:
+   1) 添加相应的配置(参考文档)
+   2) 搭建Zookeeper集群并启动
+   3) 关闭hdfs服务
+      stop-dfs.sh	
+   4) 初始化HA在zk中的状态
+      hdfs zkfc -formatZK
+   5) 启动hdfs服务
+      start-dfs.sh
+
+
+
+6. YARN HA 集群规划: 
+
+   hadoop102 :   Namenode  Datanode JournalNode   ZKFC    ZK   ResourceManager  NodeManager
+   hadoop103 :   Namenode  Datanode JournalNode   ZKFC    ZK   ResourceManager  NodeManager
+   hadoop104 :   Namenode  Datanode JournalNode   ZKFC    ZK   ResourceManager  NodeManager
+  
+7. YARN HA 搭建:
+   1) 添加相应的配置(参考文档)
+   2) 启动
+      start-yarn.sh
+
+ 
+8. Hadoop HA 总结:
+   8.1 HDFS HA
+       1) 主要解决NameNode单点故障问题
+       2) 手动故障转移(过渡，没有实际意义)
+       3) 自动故障转移(基于手动故障转移的基础来搭建,生产环境使用的)
+   8.2 YARN HA
+       1) 主要解决ResourceManager单点故障问题
+
+
+       
+9. Hadoop 联邦架构:
+   1) NameNode瓶颈:
+      内存不足。
+   2) 通过多NameNode分割不同业务的数据,进行分步管理。
+
+
+作业: 
+     1. zk中的服务器上下线案例
+     2. 搭建Hadoop HA
+     3. 总结梳理Hadoop(慢慢做) 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../../../5_Flume/projects/Flume/Flume.iml" filepath="$PROJECT_DIR$/../../../5_Flume/projects/Flume/Flume.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../6_Kafka/projects/Kafka/Kafka.iml" filepath="$PROJECT_DIR$/../../../6_Kafka/projects/Kafka/Kafka.iml" />
+      <module fileurl="file://$PROJECT_DIR$/MR.iml" filepath="$PROJECT_DIR$/MR.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../2_Zookeeper/zookeeper/zookeeper.iml" filepath="$PROJECT_DIR$/../../../2_Zookeeper/zookeeper/zookeeper.iml" />
+    </modules>
+  </component>
+</project>

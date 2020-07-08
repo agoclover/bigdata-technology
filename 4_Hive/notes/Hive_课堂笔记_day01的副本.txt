@@ -1,0 +1,178 @@
+HA问题:
+1. 搭建好HA后，通过start-dfs.sh启动集群,发现NameNode会掉.但是重新启动NameNode后，就正常运行 
+   
+   在HA集群中,NameNode启动后，需要找到JN，但是start-dfs.sh脚本启动的顺序是先起NN，后起JN，
+   因此可能因为NN启动后，尝试连接JN，但是JN还没有启动起来. 超时以后，NN自动掉了.
+   
+   相关的两个配置:
+  1) 最大重试次数
+  <property>
+	<name>ipc.client.connect.max.retries</name>
+	<value>10</value>
+  </property>
+  2) 每次重试的间隔
+  <property>
+      <name>ipc.client.connect.retry.interval</name>
+      <value>1000</value>
+  </property>
+
+Hive：
+
+1. 前置知识: 
+   1) SQL技能: MySQL 
+   2) Hadoop框架: HDFS + MapReduce 
+
+
+2. Hive是什么
+   Hive是FaceBook开源的海量结构化数据的分析框架.
+   Hive的本质是将结构化的数据映射成一张表，最终表被翻译为MR程序.
+   底层还是通过MR作为计算引擎，HDFS作为存储，Yarn作为资源调度.
+
+3. Hive的架构:
+   Hive计算的数据存储在HDFS
+   Hive的元数据信息(表的信息)存储在第三方的数据库中，默认使用的derby,我们会换成mysql. 
+
+
+4. Hive的访问:
+   4.1 Hive JDBC  
+       $HIVE_HOME/bin/beeline -u jdbc:hive2://hadoop102:10000  -n atguigu
+
+   4.2 beeline方式出现问题后:
+       1) 查看hiveserver2服务是否正常运行
+       2) 查看hadoop中 core-site.xml中是否有加兼容配置
+
+
+
+5. Hive 修改配置的方式:
+   1) 直接修改hive-site.xml(永久有效，对所有的hive客户端都生效)
+   2) hive -hiveconf xxxx=xxx  (本次连接有效，只针对于当前客户端)
+   3) hive> set xxx; 查看xxx配置的值
+      hive> set xxx=xx;(本次连接有效，只针对于当前客户端)
+
+   4) 优先级:  set >  hive -hiveconf  >  hive-site.xml  > hive-defaule.xml 
+
+
+6. Hive的数据类型
+   6.1 基本数据类型
+      1) 种类
+       int      4个字节    有符号整数
+       bigint   8个字节    有符号整数
+       double   8个字节    双精度浮点数
+       string   不指定长度 表示字符串
+
+      2) 测试
+       create table  mytbl2(id int ,money bigint ,price double , name string );
+
+  6.2 集合数据类型
+      1) 种类
+        STRUCT   字段名  STRUCT<属性名:类型,属性名:类型....>
+        Map      字段名  Map<Key类型,Value类型>
+        Array    字段名  Array<元素类型>
+
+      2) 测试
+        a. 数据
+        songsong,bingbing_lili,xiao song:18_xiaoxiao song:19,hui long guan_beijing
+        yangyang,caicai_susu,xiao yang:18_xiaoxiao yang:19,chao yang_beijing
+        
+	b.表
+	create table person(
+	name string,
+	friends array<string>,
+	children map<string, int>,
+	address struct<street:string, city:string>
+	)
+	row format delimited 2terminated by ','
+	collection items terminated by '_'
+	map keys terminated by ':'
+	lines terminated by '\n';
+
+	c. 加载数据到表
+        load data local inpath '/opt/module/hive/datas/person.txt' into table person ;
+
+	d. 执行sql 
+	   select * from person ;
++--------------+----------------------+--------------------------------------+----------------------------------------------+
+| person.name  |    person.friends    |           person.children            |                person.address                |
++--------------+----------------------+--------------------------------------+----------------------------------------------+
+| songsong     | ["bingbing","lili"]  | {"xiao song":18,"xiaoxiao song":19}  | {"street":"hui long guan","city":"beijing"}  |
+| yangyang     | ["caicai","susu"]    | {"xiao yang":18,"xiaoxiao yang":19}  | {"street":"chao yang","city":"beijing"}      |
++--------------+----------------------+--------------------------------------+----------------------------------------------+
+
+          select name, friends[0], children['xiao song'], address.street  from person ;
++-----------+-----------+-------+----------------+
+|   name    |    _c1    |  _c2  |     street     |
++-----------+-----------+-------+----------------+
+| songsong  | bingbing  | 18    | hui long guan  |
+| yangyang  | caicai    | NULL  | chao yang      |
++-----------+-----------+-------+----------------+
+
+    
+    6.3 类型转换
+        1) 隐式(自动)类型转换
+	2) 强制类型转换
+	   cast( value as 类型 )   例如: cast('1' as int )
+	   如果不能转换，则返回NULL. 例如: cast ('abc' as int )
+   
+
+
+7.  DDL
+
+   7.1  库的DDL
+   1) 建库语句
+        CREATE DATABASE [IF NOT EXISTS] database_name    --  指定库名
+	[COMMENT database_comment]  -- [对库的描述信息]
+	[LOCATION hdfs_path]  --[指定库对应的HDFS的路径]
+	[WITH DBPROPERTIES (property_name=property_value, ...)];  -- [库的属性]
+
+   2) 创建库
+      -- 创建库不指定location
+      create database if not exists testdb
+      comment 'This is a db'
+      with dbproperties("dbname"="testdb","aa"="bb");
+
+      如果不指定location，默认的HDFS对应的位置是:hdfs://hadoop102:9820/user/hive/warehouse
+      在该目录下，会根据库的名字生成一个默认的目录: 库名.db
+
+      -- 指定location
+      create database if not exists testdb1
+      location '/testdb1' ;
+      
+   
+   3) 查看库的信息
+      desc database testdb ;
+      desc database extended  testdb ;
+    
+
+   4) Hive元数据的维护:
+     
+      Hive的库， 表 等， 都是hive的元数据，都是维护到Mysql中。
+
+      hive>  show databases ; 实际上从mysql中查存储Hive库的表(DBS).
+      hive>  desc databasde xxx  ; 实际上从mysql中查存储Hive库的表中的一条数据.
+
+      梳理明白 Hive  Mysql  HDFS的关系:
+      简单来说, Hive中创建的库和表等，都是hive的元数据信息，都是维护到mysql中的，
+      在Mysql中记录了hive的库和表的详细信息.
+
+      Hive中创建的库和表在hdfs都对应一个路径， 
+      对于库来说，此路径就是表达将来在当前
+      库中创建的表，表所对应的路径，会默认存储到库的路径下（当然表的路径也可以通过location指定）
+      对于表来说, 此路径就是表达表所对应的数据要存储到该路径下. 
+
+
+
+
+
+作业:
+1. Hive的安装及配置
+2. 练习hive的数据类型
+3. 练习库的操作
+4. 回顾Mysql的操作.
+
+
+
+
+
+
+
+   

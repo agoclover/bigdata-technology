@@ -21,6 +21,7 @@ object SCase_TopN {
     val sc: SparkContext = new SparkContext(conf)
 
     val RDD: RDD[String] = sc.textFile("/Users/amos/BigdataLearn/10_Spark/Projects/myspark/input")
+    println(RDD.dependencies.mkString(", "))
 
     topN(RDD,3)
         .collect()
@@ -34,10 +35,14 @@ object SCase_TopN {
   def topN(rdd : RDD[String], n:Int): RDD[(String, List[(String, Int)])] ={
     val arrStr: RDD[Array[String]] = rdd.map(_.split(" "))
     // p-province a-ad c-count
-    arrStr.map(arr=>((arr(1), arr(4)),1))
-      .reduceByKey(_+_)
-      .map{case (pa,c)=>(pa._1, (pa._2,c))}
+    val resRDD: RDD[(String, List[(String, Int)])] = arrStr.map(arr => ((arr(1), arr(4)), 1))
+      .reduceByKey(_ + _)
+      .map { case (pa, c) => (pa._1, (pa._2, c)) }
       .groupByKey()
       .mapValues(_.toList.sortBy(-1 * _._2).take(n))
+    println(resRDD.toDebugString)
+    println("----")
+    println(resRDD.dependencies.mkString(", "))
+    resRDD
   }
 }

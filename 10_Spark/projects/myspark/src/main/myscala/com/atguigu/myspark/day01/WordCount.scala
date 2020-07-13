@@ -1,5 +1,6 @@
 package com.atguigu.myspark.day01
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -17,11 +18,13 @@ object WordCount {
     val sc = new SparkContext(conf)
 
     // calculate
-    sc.textFile(args(0))
+    val value: RDD[(String, Int)] = sc.textFile(args(0))
       .flatMap(_.split(" "))
       .map((_, 1))
       .reduceByKey(_ + _)
-      .saveAsTextFile(args(1))
+
+
+//      .saveAsTextFile(args(1))
 
     // print the result
 //     res.foreach(println)

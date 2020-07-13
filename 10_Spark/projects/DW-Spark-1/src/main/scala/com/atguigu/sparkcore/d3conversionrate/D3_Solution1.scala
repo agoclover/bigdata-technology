@@ -43,18 +43,25 @@ object D3_Solution1 {
         arr(12).toLong
       )})
 
-    //
+    // group by session_id
+    // info(3)-info(6)-info(5)-info(4)  with info.action_time unordered
     val rdd3: RDD[(String, Iterable[UserActionInfo])] = rdd2.groupBy(_.session_id)
 
     val rdd4: RDD[(String, List[((Long,Long), Int)])] = rdd3.mapValues {
       datas => {
+        // info(3)-info(4)-info(5)-info(6)  with info.action_time ordered
         val sortList: List[UserActionInfo] = datas.toList.sortBy(_.action_time)
+        // 3-4-5-6
         val pageID: List[Long] = sortList.map(info => info.page_id)
+        // 3-4-5-6 => (3,4), (4,5), (5,6) via collection.zip convert n elements to n-1 tuples
         val pageConvertion: List[(Long, Long)] = pageID.zip(pageID.tail)
+        // tag (a,b) => ((a,b), 1) for aggregation
         val pageConvertionTag: List[((Long, Long), Int)] = pageConvertion.map((_, 1))
+        // return ((a,b), 1)
         pageConvertionTag
       }
-    }
+    } // => RDD[(String, List[((Long,Long), Int)])]
+
 
     val pageSum: RDD[((Long, Long), Int)] = rdd4.map(_._2)
       .flatMap(list => list)

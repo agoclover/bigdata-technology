@@ -1,6 +1,5 @@
 package com.atguigu.spark.day05
 
-import com.alibaba.fastjson.JSON
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -24,9 +23,9 @@ object Spark05_Json {
     //Spark自带的json处理，已过时
     //val res: RDD[Option[Any]] = rdd.map(JSON.parseFull)
 
-    val res =  rdd.map(JSON.parse(_))
+//    val res =  rdd.map(JSON.parse(_))
 
-    res.collect().foreach(println)
+//    res.collect().foreach(println)
     // 关闭连接
     sc.stop()
   }

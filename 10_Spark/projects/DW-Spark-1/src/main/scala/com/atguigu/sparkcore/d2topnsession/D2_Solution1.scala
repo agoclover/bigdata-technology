@@ -26,7 +26,7 @@ object D2_Solution1 {
     val list = List[Long](15, 2, 20, 12, 11, 17, 7, 9, 19, 13)
 
     // read datas
-    val rdd1: RDD[String] = sc.textFile("/Users/amos/projects/data_warehouse/Spark/DW-Spark-1/input")
+    val rdd1: RDD[String] = sc.textFile("/Users/amos/BigdataLearn/10_Spark/Projects/DW-Spark-1/input/user_visit_action.txt")
     // split line to a array, then wrap them to a UserActionInfo instance
     val rdd2: RDD[UserActionInfo] = rdd1.map(line => {
       val arr: Array[String] = line.split("_")
@@ -57,7 +57,7 @@ object D2_Solution1 {
     val rdd6: RDD[(Long, (String, Int))] = rdd5.map {case ((category, session), count) => (category, (session, count)) }
     // group by category
     val rdd7: RDD[(Long, Iterable[(String, Int)])] = rdd6.groupByKey()
-    // sort and get top 10 session_id                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           c
+    // sort and get top 10 session_id
     val rdd8: RDD[(Long, List[(String, Int)])] = rdd7.mapValues(iter => iter.toList.sortBy(-1 * _._2).take(10))
 
     rdd8.foreach(println)

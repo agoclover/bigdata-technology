@@ -48,6 +48,8 @@ RDDs 之间存在依赖, RDD 的执行是按照血缘关系**延时计算**的. 
 
 ### 分区规则
 
+**重点**
+
 **以 scala 集合创建 RDD**
 
 如果未指定分区数, 会有默认分区数, 如果在配置文件中配置了 `spark.default.parallelism` 的值, 则取出; 如果没有指定,  则取出 CPU 的总核数 `totalCores`. 
@@ -95,6 +97,136 @@ RDD 之间的依赖关系包括两种: 窄依赖和宽依赖, NarrowDependency �
 触发行动算子之后, 会由 Driver 端的 SparkContext.runJob(RDD, func, partitions, ...) 准备好若干参数, 然后由 DAGScheduler.runJob(RDD, func, partitions, ...) 再通过 DAGScheduler.submitJob(RDD, func, partitions, ...) 提交这一个 Job, 
 
 
+
+# 企业面试题
+
+## 1 编写WordCount(读取一个本地文件)，并打包到集群运行，说明需要添加的主要参数 
+
+```scala
+sc.textFile("hdfs://linux1:9000/test.log").flatMap(_.split(" ")).map((_,1)).reduceByKey(_+_).collect
+```
+
+
+
+## 2 RDD的五个主要特性
+
+分区器、首选位置、计算方法、依赖关系、分区
+
+HashPartitioner / RangePartitioner -> 排序的时候用
+
+
+
+## 3 如何创建一个RDD，有几种方式，举例说明
+
+ 
+
+ 
+
+## 4 创建一个RDD，使其一个分区的数据转变为一个String。例如(Array("a","b","c","d"),2)=>("ab","cd")
+
+ 
+
+## 5 map与mapPartitions的区别
+
+ 
+
+## 6 coalesce 与 repartition 两个算子的作用以及区别与联系
+
+ 缩减分区用 `coalesce`, 扩大分区用 `repartition`.
+
+缩减分区如果为了避免数据倾斜, 那么需要使用 shuffle 或自己指定分区器.
+
+
+
+## 7 使用zip算子时需要注意的是什么 (即哪些情况不能使用)
+
+分区数与元素个数相同.
+
+ 
+
+## 8 reduceByKey 跟 groupByKey 之间的区别
+
+功能上讲: reducebyKey 
+
+reduceByKey 效率更高, 在 shuffle 之前有一个与聚合的过程, 但也要看业务.
+
+ 
+
+## 9 reduceByKey 跟 aggregateByKey 之间的区别与联系
+
+分区内和分区间的业务逻辑 
+
+aggregateByKey 可以把外部元素参与进来;
+
+
+
+## 10 combineByKey 的参数作用, 说明其参数调用时机
+
+ 
+
+
+
+## 11 使用 RDD 实现 Join 的多种方式
+
+- 直接 join -> (k, (v1, v2))
+- leftOuterJoin
+- rightOuterJoin
+
+
+
+## 12 aggregateByKey 与 aggregate 之间的区别与联系
+
+- 一个转换算子, 一个行动算子
+- 一个 bykey, 一个不 bykey
+- aggregateByKey 为每一个分区附一个初始值, 分区间也有这个初始值.
+
+
+
+## 13 创建一个 RDD, 自定义一种分区规则并实现? spark 中是否可以按照 Value 分区
+
+ 转换结构
+
+
+
+## 14 读取文件, 实现 WordCount 功能. (使用不同的算子实现, 至少 9 种方式)
+
+
+
+
+
+## 15 说说你对RDD血缘关系的理解
+
+对我们没啥用, 但对 Spark 来说很有用, 做容错和数据恢复时, 会根据血缘关系很快地执行.
+
+ 
+
+## 16 Spark 是如何进行任务切分的, 请说明其中涉及到的相关概念
+
+
+
+ 
+
+## 17 RDD 的 cache 和 checkPoint 的区别和联系
+
+ cache 底层调用的是 persist (其参数是 内存), 程序结束后会删掉; checkPoint 会保存在高可用的地方.
+
+cache 不切断血缘关系, checkPoint 会切断血缘关系.
+
+
+
+## 18 创建一个 RDD, 自定义一种分区规则并实现
+
+ 
+
+## 19 Spark 读取 HDFS 文件默认的切片机制
+
+ 
+
+## 20 说说你对广播变量的理解
+
+ 
+
+## 21 自定义一个累加器, 实现计数功能
 
 
 

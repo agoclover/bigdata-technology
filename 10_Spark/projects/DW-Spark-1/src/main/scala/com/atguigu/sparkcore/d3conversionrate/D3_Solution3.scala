@@ -100,12 +100,13 @@ object D3_Solution3 {
     ResRDD
       .sortBy(-1 * _._1)
       .collect
-      .foreach{ case (rate, (page, pageNext)) => {
-        val roundedRate: String = rate.formatted("%.5f")
-        println(s"$page -> $pageNext rates $roundedRate")
+      .foreach{ case (rate, (page, pageNext)) =>{
+        printf("%2s -> %2s is %.10f\n", page, pageNext, rate)
       }
       }
     // stop the application
+
+
     sc.stop()
   }
 }

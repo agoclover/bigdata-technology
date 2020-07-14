@@ -18,10 +18,12 @@ object WordCount {
     val sc = new SparkContext(conf)
 
     // calculate
-    val value: RDD[(String, Int)] = sc.textFile(args(0))
+    sc.textFile(args(0))
       .flatMap(_.split(" "))
       .map((_, 1))
       .reduceByKey(_ + _)
+        .collect()
+        .foreach(println)
 
 
 //      .saveAsTextFile(args(1))

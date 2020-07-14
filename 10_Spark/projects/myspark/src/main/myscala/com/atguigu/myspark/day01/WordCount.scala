@@ -1,5 +1,6 @@
 package com.atguigu.myspark.day01
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -21,7 +22,11 @@ object WordCount {
       .flatMap(_.split(" "))
       .map((_, 1))
       .reduceByKey(_ + _)
-      .saveAsTextFile(args(1))
+        .collect()
+        .foreach(println)
+
+
+//      .saveAsTextFile(args(1))
 
     // print the result
 //     res.foreach(println)

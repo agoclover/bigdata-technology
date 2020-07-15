@@ -62,8 +62,9 @@ object D3_Solution2 {
     val pageSumMap: Map[Long, Long] = infoRDD
       .map(info => (info.page_id, 1L))
       .reduceByKey(_ + _)
-      .collect
+      .collect()
       .toMap
+
 
     val resUnorderedRDD: RDD[(Double, (Long, Long))] = cvtSumRDD.map {
       case ((page, pageNext), count) => {

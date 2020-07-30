@@ -1,14 +1,8 @@
 package com.atguigu.sparksql
 
-import java.nio.ByteBuffer
-import java.nio.file.attribute.UserDefinedFileAttributeView
-import java.util
-
-import org.apache.hadoop.mapred.lib.aggregate.UserDefinedValueAggregatorDescriptor
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.apache.spark.sql.expressions.{Aggregator, MutableAggregationBuffer, UserDefinedAggregateFunction}
+import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
 import org.apache.spark.sql.types.{DataType, DoubleType, IntegerType, LongType, StructField, StructType}
-import org.apache.spark.{Aggregator, SparkConf, SparkContext}
 
 /**
  * <p>Spark SQL - UDAF</p>
